@@ -1,0 +1,77 @@
+==============================================================================
+AUTONOMOUS CYBER DEFENSE - DAILY TECHNICAL LOG
+==============================================================================
+DATE & TIMESTAMP : Sat Sep  5 20:30:21 PKT 2026
+HOSTNAME & USER  : hamzaimran@DESKTOP-31BK2BG
+OS ENVIRONMENT   : Native Ubuntu Linux
+CURRENT PHASE    : Phase 1 (Core Architecture & Infrastructure Hardening)
+DAY & TOPIC      : Day 01 - Networking OSI Model & Core Service Auditing
+==============================================================================
+
+1. DAILY OBJECTIVE
+------------------------------------------------------------------------------
+Understand the distinction between the 7-layer OSI model and 4-layer TCP/IP suite, 
+verify standard system service ports (DNS:53, HTTP:80, HTTPS:443, SSH:22) in /etc/services, 
+and audit all active listening sockets and running daemons on my machine using `ss`.
+
+2. SYSTEM CONTEXT & LOCAL TELEMETRY
+------------------------------------------------------------------------------
+$ whoami && hostname
+hamzaimran
+DESKTOP-31BK2BG
+
+$ ip -br a
+lo               UNKNOWN        127.0.0.1/8 ::1/128 
+eth0             UP             172.29.89.97/20 fe80::215:5dff:fe4e:b693/64
+
+3. COMMAND EXECUTION & VERIFIABLE TERMINAL OUTPUTS
+------------------------------------------------------------------------------
+[Command 1: Query system port definitions for target protocols]
+$ grep -E "^(domain|http|https|ssh)\s" /etc/services
+--- [Output Start] ---
+ssh             22/tcp                          # SSH Remote Login Protocol
+domain          53/tcp                          # Domain Name Server
+domain          53/udp
+http            80/tcp          www             # WorldWideWeb HTTP
+https           443/tcp                         # http protocol over TLS/SSL
+https           443/udp                         # HTTP/3
+--- [Output End] ---
+
+[Command 2: Audit active listening sockets and owning process daemons]
+$ sudo ss -tulpn
+--- [Output Start] ---
+Netid   State      Recv-Q   Send-Q   Local Address:Port   Peer Address:Port   Process
+udp     UNCONN     0        0           127.0.0.54:53          0.0.0.0:*       users:(("systemd-resolve",pid=84,fd=18))
+udp     UNCONN     0        0        127.0.0.53%lo:53          0.0.0.0:*       users:(("systemd-resolve",pid=84,fd=16))
+udp     UNCONN     0        0            127.0.0.1:323         0.0.0.0:*       users:(("chronyd",pid=235,fd=4))
+udp     UNCONN     0        0            127.0.0.1:323         0.0.0.0:*
+udp     UNCONN     0        0                [::1]:323            [::]:*
+udp     UNCONN     0        0                [::1]:323            [::]:*       users:(("chronyd",pid=235,fd=5))
+tcp     LISTEN     0        4096        127.0.0.54:53          0.0.0.0:*       users:(("systemd-resolve",pid=84,fd=19))
+tcp     LISTEN     0        4096     127.0.0.53%lo:53          0.0.0.0:*       users:(("systemd-resolve",pid=84,fd=17))
+tcp     LISTEN     0        511              *:80                *:*       users:(("apache2",pid=248,fd=4),("apache2",pid=247,fd=4),("apache2",pid=116,fd=4))
+--- [Output End] ---
+
+4. ARCHITECTURAL REAL-WORLD APPLICATION & PROBLEM SOLVING
+------------------------------------------------------------------------------
+[Audit Target 1: Web Server Daemon (`apache2` on Port 80)]
+* Service Purpose: Apache is running on my machine serving unencrypted web pages over TCP port 80.
+* Security Risks: The socket output shows `*:80`, meaning Apache is listening on ALL available interfaces (`0.0.0.0`). Anyone connected to my local subnet (`172.29.89.97/20`) can reach this web server. Because port 80 uses plain HTTP, any credentials or data sent over it are transmitted in cleartext and can be intercepted via packet sniffing.
+* Defensive Action: In a production setup, I should not leave a web server open on wildcard interfaces without encryption. I need to either configure TLS (HTTPS port 443), restrict incoming traffic via `ufw` firewall, or stop the Apache service if it isn't actively required (`sudo systemctl stop apache2`).
+
+[Audit Target 2: Internal DNS Stub Resolver (`systemd-resolve` on Port 53)]
+* Service Purpose: `systemd-resolve` (PID 84) acts as a local DNS cache and resolver for my operating system, converting domain names into IP addresses.
+* Security Risks: If a DNS resolver listens on public network interfaces (`0.0.0.0`), malicious actors can use it for DNS amplification attacks or attempt DNS cache poisoning to redirect user traffic.
+* Defensive Action: My `ss` output proves that `systemd-resolve` is safely restricted to `127.0.0.53` and `127.0.0.54` loopback interfaces. Because it is bound strictly to loopback, external machines on `eth0` cannot reach or exploit my DNS stub resolver.
+
+[Audit Target 3: Network Time Daemon (`chronyd` on Port 323)]
+* Service Purpose: `chronyd` keeps the operating system system clock synchronized over NTP.
+* Security Risks: Unmonitored management ports can be exploited if exposed to untrusted networks.
+* Defensive Action: The socket audit confirms `chronyd` listens exclusively on loopback IPs `127.0.0.1:323` and `[::1]:323`, ensuring clock control remains isolated locally.
+
+5. KEY TECHNICAL LESSONS
+------------------------------------------------------------------------------
+* Running `sudo ss -tulpn` revealed an active `apache2` web server listening on port 80 (`*:80`) that I was not aware was running in the background.
+* Binding sockets to wildcard addresses (`*` or `0.0.0.0`) exposes services to the entire local network, whereas loopback bindings (`127.0.0.1` / `127.0.0.53`) isolate services strictly to the host machine.
+* /etc/services acts as a local lookup dictionary mapping human-readable protocol names to standard IANA port numbers and transport types (TCP/UDP).
+==============================================================================
