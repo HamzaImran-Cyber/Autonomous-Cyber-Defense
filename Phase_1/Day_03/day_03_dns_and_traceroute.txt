@@ -1,0 +1,95 @@
+==============================================================================
+AUTONOMOUS CYBER DEFENSE - DAILY TECHNICAL LOG
+==============================================================================
+DATE & TIMESTAMP : Mon Sep  7 10:48:19 PKT 2026
+HOSTNAME & USER  : hamzaimran@DESKTOP-31BK2BG
+OS ENVIRONMENT   : Native Ubuntu Linux
+CURRENT PHASE    : Phase 1 (Core Architecture & Infrastructure Hardening)
+DAY & TOPIC      : Day 03 - DNS Resolution Path & Routing Telemetry
+==============================================================================
+
+1. DAILY OBJECTIVE
+------------------------------------------------------------------------------
+Perform DNS record queries using `dig`, perform top-down recursive DNS resolution 
+tracing from root name servers, and conduct ICMP path discovery to public DNS 
+endpoints (`1.1.1.1`) using `traceroute` to analyze network latency and hop behavior.
+
+2. SYSTEM CONTEXT & LOCAL TELEMETRY
+------------------------------------------------------------------------------
+$ whoami && hostname
+hamzaimran
+DESKTOP-31BK2BG
+
+$ ip -br a
+lo               UNKNOWN        127.0.0.1/8 ::1/128
+eth0             UP             172.29.89.97/20 fe80::215:5dff:fea5:a9e7/64
+
+3. COMMAND EXECUTION & VERIFIABLE TERMINAL OUTPUTS
+------------------------------------------------------------------------------
+[Command 1: Fast DNS IPv4 address lookup]
+$ dig google.com +short
+--- [Output Start] ---
+142.250.202.14
+--- [Output End] ---
+
+[Command 2: Hierarchical DNS resolution trace]
+$ dig +trace google.com
+--- [Output Start] ---
+; <<>> DiG 9.20.24-1ubuntu0.3-Ubuntu <<>> +trace google.com
+;; global options: +cmd
+.                       0       IN      NS      l.root-servers.net.
+.                       0       IN      NS      a.root-servers.net.
+.                       0       IN      NS      k.root-servers.net.
+.                       0       IN      NS      e.root-servers.net.
+.                       0       IN      NS      h.root-servers.net.
+.                       0       IN      NS      d.root-servers.net.
+.                       0       IN      NS      m.root-servers.net.
+.                       0       IN      NS      b.root-servers.net.
+.                       0       IN      NS      j.root-servers.net.
+.                       0       IN      NS      i.root-servers.net.
+.                       0       IN      NS      g.root-servers.net.
+.                       0       IN      NS      c.root-servers.net.
+.                       0       IN      NS      f.root-servers.net.
+;; Received 432 bytes from 172.29.80.1#53(172.29.80.1) in 19 ms
+
+;; Received 39 bytes from 192.112.36.4#53(g.root-servers.net) in 3 ms
+--- [Output End] ---
+
+[Command 3: ICMP network route path discovery]
+$ sudo traceroute -I 1.1.1.1
+--- [Output Start] ---
+traceroute to 1.1.1.1 (1.1.1.1), 30 hops max, 60 byte packets
+ 1  DESKTOP-31BK2BG.mshome.net (172.29.80.1)  1.105 ms  1.064 ms *
+ 2  192.168.0.1 (192.168.0.1)  7.550 ms * *
+ 3  * * *
+ 4  * * *
+ 5  * * *
+ 6  * * *
+ 7  * * *
+ 8  * * *
+ 9  one.one.one.one (1.1.1.1)  25.742 ms  25.963 ms  26.353 ms
+--- [Output End] ---
+
+4. ARCHITECTURAL REAL-WORLD APPLICATION & PROBLEM SOLVING
+------------------------------------------------------------------------------
+[Audit Target 1: DNS Query Tracing (`dig google.com +short` & `dig +trace`)]
+* Purpose: Translates human-readable domain names into target IPv4 addresses (`142.250.202.14`) and verifies the delegation chain starting from root nameservers down to authoritative servers.
+* Security Risk: Plaintext DNS queries over UDP port 53 can be intercepted, sniffed, or modified via DNS cache poisoning, causing users to be redirected to phishing infrastructure.
+* Defensive Action: Security analysts perform manual DNS resolution traces with `dig +trace` to verify that IP responses originate from legitimate authoritative nameservers. Enterprise systems implement DNSSEC validation alongside DoH (DNS over HTTPS) or DoT (DNS over TLS) to encrypt domain lookups.
+
+[Audit Target 2: Routing Path Analysis (`sudo traceroute -I 1.1.1.1`)]
+* Purpose: Uses ICMP Echo probes with incrementally increasing Time-To-Live (TTL) values to map each intermediate router hop between the local host and Cloudflare's public DNS (`1.1.1.1`).
+* Security Risk: Unmonitored WAN transit routes leave systems vulnerable to BGP hijacking or unauthorized traffic redirection through hostile networks or rogue intermediary nodes.
+* Defensive Action: Running regular route tracing baseline audits allows defensive teams to detect abnormal hop deviations, measure hop-by-hop latency spikes, and verify that outbound enterprise traffic stays on expected ISP paths.
+
+[Audit Target 3: Filtering & Timeouts (Hops 3–8 `* * *` in Traceroute)]
+* Purpose: Highlights the transition from private virtual/local networks (`172.29.80.1` and `192.168.0.1`) out into public ISP backbones.
+* Security Risk: Asterisks (`* * *`) indicate intermediate routers configured to drop diagnostic TTL-expired packets, obscuring exact network topology during active troubleshooting or threat investigations.
+* Defensive Action: Switching from default UDP probing to ICMP probing (`-I`) bypasses basic port blocks while maintaining clear visibility of final destination response times (25.7 ms).
+
+5. KEY TECHNICAL LESSONS
+------------------------------------------------------------------------------
+* `dig +trace` bypasses local caches to query root DNS servers (`a.root-servers.net` to `m.root-servers.net`) directly, demonstrating how DNS hierarchy functions under the hood.
+* Default UDP traceroute probes are often dropped by middleboxes and ISP firewalls; using `sudo traceroute -I` sends ICMP Echo packets to successfully trace WAN paths.
+* Local private hops (`172.29.80.1` and `192.168.0.1`) show sub-10ms latency, while public WAN endpoints (`1.1.1.1`) add realistic physical internet transport latency (~25.7ms).
+==============================================================================
