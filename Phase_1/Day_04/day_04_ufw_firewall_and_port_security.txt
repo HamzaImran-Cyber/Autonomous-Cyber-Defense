@@ -1,0 +1,97 @@
+==============================================================================
+AUTONOMOUS CYBER DEFENSE - DAILY TECHNICAL LOG
+==============================================================================
+DATE & TIMESTAMP : Tue Sep  8 14:56:51 PKT 2026
+HOSTNAME & USER  : hamzaimran@DESKTOP-31BK2BG
+OS ENVIRONMENT   : Native Ubuntu Linux
+CURRENT PHASE    : Phase 1 (Core Architecture & Infrastructure Hardening)
+DAY & TOPIC      : Day 04 - Linux Firewall Fundamentals (UFW) & Port Control
+==============================================================================
+
+1. DAILY OBJECTIVE
+------------------------------------------------------------------------------
+Install Uncomplicated Firewall (UFW) on Ubuntu, configure a safe default rule 
+set (block all incoming traffic / allow all outgoing traffic), whitelist port 22 
+for SSH, and test local port responses using `nc` (netcat).
+
+2. SYSTEM CONTEXT & LOCAL TELEMETRY
+------------------------------------------------------------------------------
+$ whoami && hostname
+hamzaimran
+DESKTOP-31BK2BG
+
+$ ip -br a
+lo               UNKNOWN        127.0.0.1/8 ::1/128
+eth0             UP             172.29.89.97/20 fe80::215:5dff:fea5:a9e7/64
+
+3. COMMAND EXECUTION & VERIFIABLE TERMINAL OUTPUTS
+------------------------------------------------------------------------------
+[Command 1: Checking initial firewall status]
+$ sudo ufw status verbose
+--- [Output Start] ---
+Status: inactive
+--- [Output End] ---
+
+[Command 2: Setting default inbound/outbound rules]
+$ sudo ufw default deny incoming && sudo ufw default allow outgoing
+--- [Output Start] ---
+Default incoming policy changed to 'deny'
+Default outgoing policy changed to 'allow'
+--- [Output End] ---
+
+[Command 3: Allowing SSH port 22]
+$ sudo ufw allow 22/tcp
+--- [Output Start] ---
+Rules updated
+Rules updated (v6)
+--- [Output End] ---
+
+[Command 4: Turning on the firewall]
+$ sudo ufw enable
+--- [Output Start] ---
+Firewall is active and enabled on system startup
+--- [Output End] ---
+
+[Command 5: Verifying active rules]
+$ sudo ufw status verbose
+--- [Output Start] ---
+Status: active
+Logging: on (low)
+Default: deny (incoming), allow (outgoing), disabled (routed)
+New profiles: skip
+
+To                         Action      From
+--                         ------      ----
+22/tcp                     ALLOW IN    Anywhere
+22/tcp (v6)                ALLOW IN    Anywhere (v6)
+--- [Output End] ---
+
+[Command 6: Testing port 80 locally with netcat]
+$ nc -zv 127.0.0.1 80
+--- [Output Start] ---
+Connection to 127.0.0.1 80 port [tcp/http] succeeded!
+--- [Output End] ---
+
+4. ARCHITECTURAL REAL-WORLD APPLICATION & PROBLEM SOLVING
+------------------------------------------------------------------------------
+[Audit Target 1: Blocking Incoming Traffic (`default deny incoming / allow outgoing`)]
+* Purpose: Setting a strict starting rule so no outside computer on the network can connect to my Linux system unless I specifically write a rule to allow it, while still letting my system reach the internet for updates and web browsing.
+* Security Risk: If a machine has no active firewall, any service or application running in the background with an open port is exposed to anyone scanning the local network.
+* Practical Action: Setting `deny incoming` as the default rule shuts down all unneeded entry points at once, which is the standard safety starting point when setting up any server.
+
+[Audit Target 2: Whitelisting Management Ports (`sudo ufw allow 22/tcp`)]
+* Purpose: Adding an explicit rule to allow SSH traffic on TCP port 22 before turning on the firewall engine.
+* Security Risk: If you enable a firewall on a remote server (like AWS or DigitalOcean) without allowing port 22 first, the firewall will block your remote connection and permanently lock you out of your own server.
+* Practical Action: Getting into the habit of always allowing management ports (like SSH) before running `ufw enable` prevents lockout accidents on remote machines.
+
+[Audit Target 3: Checking Port Sockets with Netcat (`nc -zv 127.0.0.1 80`)]
+* Purpose: Testing if port 80 is listening on my local loopback address (`127.0.0.1`) without sending actual web page data or opening a full browser.
+* Security Risk: Assuming a port is completely closed just because you didn't configure a web server can lead to missed background services that are secretly listening.
+* Practical Action: Using `nc -zv` gives a fast, simple way to check if a port is open and responding locally before deciding whether to block or open it to the network.
+
+5. KEY TECHNICAL LESSONS
+------------------------------------------------------------------------------
+* UFW provides a simple way to manage the underlying `iptables` packet filtering system built into the Linux kernel.
+* `nc -zv` is a lightweight tool for checking if a specific port is listening without sending extra data payloads.
+* Local internal traffic (`127.0.0.1`) is allowed by default so programs on the same computer can still talk to each other even when external incoming traffic is blocked.
+==============================================================================
