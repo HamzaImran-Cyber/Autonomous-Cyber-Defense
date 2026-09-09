@@ -1,0 +1,104 @@
+==============================================================================
+AUTONOMOUS CYBER DEFENSE - DAILY TECHNICAL LOG
+==============================================================================
+DATE & TIMESTAMP : Wed Sep  9 19:19:25 PKT 2026
+HOSTNAME & USER  : hamzaimran@DESKTOP-31BK2BG
+OS ENVIRONMENT   : Native Ubuntu Linux
+CURRENT PHASE    : Phase 1 (Core Architecture & Infrastructure Hardening)
+DAY & TOPIC      : Day 05 - System Telemetry & Process Auditing
+==============================================================================
+
+1. DAILY OBJECTIVE
+------------------------------------------------------------------------------
+Inspect system memory (RAM) and Swap space using `free -m`, capture a real-time CPU 
+and process usage snapshot using `top`, and audit running background processes, 
+Process IDs (PIDs), and user ownership using `ps aux`.
+
+2. SYSTEM CONTEXT & LOCAL TELEMETRY
+------------------------------------------------------------------------------
+$ whoami && hostname
+hamzaimran
+DESKTOP-31BK2BG
+
+$ ip -br a
+lo               UNKNOWN        127.0.0.1/8 ::1/128
+eth0             UP             172.29.89.97/20 fe80::215:5dff:fea5:a9e7/64
+
+3. COMMAND EXECUTION & VERIFIABLE TERMINAL OUTPUTS
+------------------------------------------------------------------------------
+[Command 1: Checking physical memory and swap allocation]
+$ free -m
+--- [Output Start] ---
+               total        used        free      shared  buff/cache   available
+Mem:            3854         474        2737           3         776        3379
+Swap:           1024           0        1024
+--- [Output End] ---
+
+[Command 2: Capturing snapshot of active CPU load and processes]
+$ top -b -n 1 | head -n 20
+--- [Output Start] ---
+top - 19:19:25 up 2 min,  1 user,  load average: 0.08, 0.15, 0.07
+Tasks:  26 total,   1 running,  25 sleeping,   0 stopped,   0 zombie
+%Cpu(s):  2.2 us,  2.2 sy,  0.0 ni, 95.6 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+MiB Mem :   3854.6 total,   2747.0 free,    464.6 used,    777.3 buff/cache
+MiB Swap:   1024.0 total,   1024.0 free,      0.0 used.   3390.0 avail Mem
+
+    PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
+    540 hamzaim+  20   0    8036   5520   3536 R   9.1   0.1   0:00.01 top
+      1 root      20   0   24568  15584  11580 S   0.0   0.4   0:01.66 systemd
+      2 root      20   0    3180   2204   2072 S   0.0   0.1   0:00.02 init-sy+
+      6 root      20   0    3180   2044   1940 S   0.0   0.1   0:00.00 init
+     49 root      19  -1   42232  16568  15308 S   0.0   0.4   0:00.40 systemd+
+     83 systemd+  20   0   22416  14452  11960 S   0.0   0.4   0:00.23 systemd+
+     94 root      20   0   35224  12108   9156 S   0.0   0.3   0:00.80 systemd+
+    160 root      20   0    2888   1952   1820 S   0.0   0.0   0:00.08 chronyd+
+    166 root      20   0    4472   3092   2840 S   0.0   0.1   0:00.01 cron
+    172 message+  20   0    8820   5396   4720 S   0.0   0.1   0:00.11 dbus-da+
+    193 root      20   0   44096  29696  14552 S   0.0   0.8   0:00.40 network+
+    199 root      20   0   18444   9396   8148 S   0.0   0.2   0:00.17 systemd+
+    202 root      20   0 1792300  15160  12548 S   0.0   0.4   0:00.16 wsl-pro+
+--- [Output End] ---
+
+[Command 3: Auditing process list, PIDs, and user permissions]
+$ ps aux | head -n 15
+--- [Output Start] ---
+USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+root           1  0.3  0.3  24568 15584 ?        Ss   19:16   0:01 /sbin/init
+root           2  0.0  0.0   3180  2204 hvc0     Sl+  19:16   0:00 /init
+root           6  0.0  0.0   3180  2044 hvc0     Sl+  19:16   0:00 plan9 --control-socket 7 --log-level 4 --server-fd 8 --pipe-fd 10 --log-truncate
+root          49  0.0  0.4  50428 16768 ?        S<s  19:16   0:00 /usr/lib/systemd/systemd-journald
+systemd+      83  0.0  0.3  22416 14452 ?        Ss   19:16   0:00 /usr/lib/systemd/systemd-resolved
+root          94  0.1  0.3  35224 12108 ?        Ss   19:16   0:00 /usr/lib/systemd/systemd-udevd
+root         160  0.0  0.0   2888  1952 ?        Ss   19:16   0:00 /bin/sh /usr/lib/systemd/scripts/chronyd-starter.sh -n -F 1
+root         166  0.0  0.0   4472  3092 ?        Ss   19:16   0:00 /usr/sbin/cron -f -P
+message+     172  0.0  0.1   8820  5396 ?        Ss   19:16   0:00 @dbus-daemon --system --address=systemd: --nofork --nopidfile --systemd-activation --syslog-only
+root         193  0.0  0.7  44096 29696 ?        Ss   19:16   0:00 /usr/bin/python3 /usr/bin/networkd-dispatcher --run-startup-triggers
+root         199  0.0  0.2  18444  9396 ?        Ss   19:16   0:00 /usr/lib/systemd/systemd-logind
+root         202  0.0  0.3 1792300 15172 ?       Ssl  19:16   0:00 /usr/libexec/wsl-pro-service
+syslog       218  0.0  0.1 220548  5904 ?        Ssl  19:16   0:00 /usr/sbin/rsyslogd -n -iNONE
+_chrony      254  0.0  0.1  20424  6356 ?        S    19:16   0:00 /usr/sbin/chronyd -n -F 1 -x
+--- [Output End] ---
+
+4. ARCHITECTURAL REAL-WORLD APPLICATION & PROBLEM SOLVING
+------------------------------------------------------------------------------
+[Audit Target 1: Physical Memory & Swap Allocation (`free -m`)]
+* Purpose: Checking active RAM usage (474 MB used out of 3854 MB) and confirming that Swap memory is completely unused (0 MB used out of 1024 MB).
+* Security/System Risk: High memory usage or heavy reliance on Swap memory slows system response times and can indicate a memory leak or a denial-of-service condition caused by runaway processes.
+* Practical Action: Monitoring RAM and Swap regularly helps defenders identify resource-heavy applications before they crash system services or freeze the host.
+
+[Audit Target 2: CPU Utilization & Process Snapshots (`top` snapshot)]
+* Purpose: Capturing real-time CPU idle state (95.6% idle) and identifying top active processes currently drawing system performance.
+* Security/System Risk: Unexpected CPU spikes from unknown background tasks can be a sign of unauthorized background scripts, cryptominers, or failing system daemons.
+* Practical Action: Using `top` gives quick visibility into system load averages and process states (26 total tasks, 1 running, 25 sleeping) to isolate resource hogs.
+
+[Audit Target 3: Process Ownership & Execution Tree (`ps aux`)]
+* Purpose: Mapping running processes to their specific user accounts (such as `root`, `systemd+`, `message+`, `_chrony`) and identifying unique Process IDs (PIDs).
+* Security/System Risk: Unrecognized processes running with elevated privileges (`root`) pose a major risk if compromised, as they have full access to system files and settings.
+* Practical Action: Auditing the process list with `ps aux` lets defenders verify that only legitimate system services (like `systemd-resolved`, `chronyd`, `cron`) are running with root rights.
+
+5. KEY TECHNICAL LESSONS
+------------------------------------------------------------------------------
+* `free -m` breaks down total, used, free, and cached memory, confirming that Linux reserves unused RAM for buffers to speed up system performance.
+* The `top` command displays process CPU and memory consumption, showing that the `top` command itself was the highest CPU consumer (9.1%) during the brief snapshot.
+* `ps aux` lists process owners, PIDs, and execution paths, making it easy to trace background services back to their configuration binaries (like `/usr/sbin/cron` or `/usr/lib/systemd/systemd-resolved`).
+==============================================================================
