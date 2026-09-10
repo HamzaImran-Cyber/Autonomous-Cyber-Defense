@@ -1,0 +1,92 @@
+==============================================================================
+AUTONOMOUS CYBER DEFENSE - DAILY TECHNICAL LOG
+==============================================================================
+DATE & TIMESTAMP : Thu Sep 10 18:46:52 PKT 2026
+HOSTNAME & USER  : hamzaimran@DESKTOP-31BK2BG
+OS ENVIRONMENT   : Native Ubuntu Linux (WSL2)
+CURRENT PHASE    : Phase 1 (Core Architecture & Infrastructure Hardening)
+DAY & TOPIC      : Day 06 - Linux Authentication Logs & User Telemetry
+==============================================================================
+
+1. DAILY OBJECTIVE
+------------------------------------------------------------------------------
+Inspect system login history using `last -n 5`, track user session lifecycle events 
+managed by `systemd-logind`, and filter system logs for critical errors and kernel 
+warnings using `journalctl -p err..alert`.
+
+2. SYSTEM CONTEXT & LOCAL TELEMETRY
+------------------------------------------------------------------------------
+$ whoami && hostname
+hamzaimran
+DESKTOP-31BK2BG
+
+$ ip -br a
+lo               UNKNOWN        127.0.0.1/8 ::1/128
+eth0             UP             172.29.89.97/20 fe80::215:5dff:fea5:a9e7/64
+
+3. COMMAND EXECUTION & VERIFIABLE TERMINAL OUTPUTS
+------------------------------------------------------------------------------
+[Command 1: Checking recent boot records and login history]
+$ last -n 5
+--- [Output Start] ---
+reboot   system boot  6.18.33.2-micros Thu Sep 10 18:16 - still running
+--- [Output End] ---
+
+[Command 2: Inspecting systemd user session lifecycle events]
+$ sudo journalctl -u systemd-logind --no-pager -n 15
+--- [Output Start] ---
+Sep 10 18:17:03 DESKTOP-31BK2BG systemd[1]: Started systemd-logind.service - User Login Management.
+Sep 10 18:17:09 DESKTOP-31BK2BG systemd-logind[218]: New session 'c1' of user 'hamzaimran' with class 'user' and type 'tty'.
+Sep 10 18:17:09 DESKTOP-31BK2BG systemd-logind[218]: New session 'c2' of user 'hamzaimran' with class 'manager' and type 'unspecified'.
+Sep 10 18:45:05 DESKTOP-31BK2BG systemd-logind[218]: The system will power off now!
+Sep 10 18:45:05 DESKTOP-31BK2BG systemd-logind[218]: System is powering down.
+Sep 10 18:45:05 DESKTOP-31BK2BG systemd-logind[218]: Removed session c1.
+Sep 10 18:45:05 DESKTOP-31BK2BG systemd-logind[218]: Removed session c2.
+Sep 10 18:45:05 DESKTOP-31BK2BG systemd[1]: Stopping systemd-logind.service - User Login Management...
+Sep 10 18:45:05 DESKTOP-31BK2BG systemd[1]: systemd-logind.service: Deactivated successfully.
+Sep 10 18:45:05 DESKTOP-31BK2BG systemd[1]: Stopped systemd-logind.service - User Login Management.
+Sep 10 18:45:36 DESKTOP-31BK2BG systemd[1]: Starting systemd-logind.service - User Login Management...
+Sep 10 18:45:38 DESKTOP-31BK2BG systemd-logind[148]: New seat seat0.
+Sep 10 18:45:38 DESKTOP-31BK2BG systemd[1]: Started systemd-logind.service - User Login Management.
+Sep 10 18:45:43 DESKTOP-31BK2BG systemd-logind[148]: New session 'c1' of user 'hamzaimran' with class 'user' and type 'tty'.
+Sep 10 18:45:44 DESKTOP-31BK2BG systemd-logind[148]: New session 'c2' of user 'hamzaimran' with class 'manager' and type 'unspecified'.
+--- [Output End] ---
+
+[Command 3: Filtering system journal for errors and alert-level events]
+$ sudo journalctl -p err..alert --no-pager -n 10
+--- [Output Start] ---
+Sep 10 18:45:06 DESKTOP-31BK2BG systemd[1]: Failed unmounting init.mount - /init.
+Sep 10 18:45:06 DESKTOP-31BK2BG systemd[1]: Failed unmounting tmp-.X11\x2dunix.mount - /tmp/.X11-unix.
+Sep 10 18:45:35 DESKTOP-31BK2BG kernel: PCI: Fatal: No config space access function found
+Sep 10 18:45:35 DESKTOP-31BK2BG kernel: hv_balloon: Cold memory discard hypercall failed with status 1a00000005
+Sep 10 18:45:35 DESKTOP-31BK2BG kernel: hv_balloon: Underlying Hyper-V does not support order less than 9. Hypercall failed
+Sep 10 18:45:35 DESKTOP-31BK2BG kernel: hv_balloon: Defaulting to page_reporting_order 9
+Sep 10 18:45:35 DESKTOP-31BK2BG unknown: WSL (106) ERROR: CheckConnection: getaddrinfo() failed: -5
+Sep 10 18:45:46 DESKTOP-31BK2BG chronyd[220]: Could not step system clock
+Sep 10 18:45:48 DESKTOP-31BK2BG chronyd[220]: Could not step system clock
+Sep 10 18:46:52 DESKTOP-31BK2BG chronyd[220]: Could not step system clock
+--- [Output End] ---
+
+4. ARCHITECTURAL REAL-WORLD APPLICATION & PROBLEM SOLVING
+------------------------------------------------------------------------------
+[Audit Target 1: Boot Records & Session Verification (`last -n 5`)]
+* Purpose: Reading the system's `wtmpdb` database to track recent kernel boots, user login events, and session durations.
+* Security/System Risk: Unrecognized login sessions or unexpected reboots going unnoticed without log inspection.
+* Practical Action: Checking `last` regularly allows defenders to verify legitimate system access and identify unauthorized user logins.
+
+[Audit Target 2: Session Lifecycle Auditing (`systemd-logind` journal)]
+* Purpose: Tracking session creation (`c1`, `c2`), user permissions (`hamzaimran`), terminal types (`tty`), and shutdown/cleanup sequences managed by `systemd-logind`.
+* Security/System Risk: Stale or lingering user sessions remaining open after a user disconnects, leaving background handles active.
+* Practical Action: Monitoring `systemd-logind` provides precise timestamps for when sessions open and close, making it easier to correlate user activity during incident investigation.
+
+[Audit Target 3: Log Priority Filtering (`journalctl -p err..alert`)]
+* Purpose: Filtering out standard informational log clutter to highlight priority system errors, kernel messages, and driver warnings.
+* Security/System Risk: Critical hardware or service warnings getting buried under thousands of routine system messages.
+* Practical Action: Using `-p err..alert` helps administrators immediately spot system instability, hypervisor driver issues, or network initialization failures.
+
+5. KEY TECHNICAL LESSONS
+------------------------------------------------------------------------------
+* Ubuntu 24.04 uses `wtmpdb` for boot tracking, recording kernel start times and system uptime history.
+* `systemd-logind` assigns unique session IDs (like `c1` for interactive TTY sessions and `c2` for user manager processes) and logs their explicit teardown on shutdown.
+* Filtering `journalctl` by log priority (`-p err..alert`) suppresses informational noise, revealing specific WSL2 Hyper-V kernel drivers (`hv_balloon`) and time synchronization (`chronyd`) events.
+==============================================================================
