@@ -1,0 +1,84 @@
+==============================================================================
+AUTONOMOUS CYBER DEFENSE - DAILY TECHNICAL LOG
+==============================================================================
+DATE & TIMESTAMP : Fri Sep 11 17:30:09 PKT 2026
+HOSTNAME & USER  : hamzaimran@DESKTOP-31BK2BG
+OS ENVIRONMENT   : Native Ubuntu Linux (WSL2)
+CURRENT PHASE    : Phase 1 (Core Architecture & Infrastructure Hardening)
+DAY & TOPIC      : Day 07 - Network Socket Telemetry & Active Port Auditing
+==============================================================================
+
+1. DAILY OBJECTIVE
+------------------------------------------------------------------------------
+Audit active network sockets using `ss -tulpn`, map active sockets to process 
+binaries and file descriptors using `lsof -i -P -n`, and inspect the local 
+layer-2/layer-3 ARP neighbor cache using `ip neighbor`.
+
+2. SYSTEM CONTEXT & LOCAL TELEMETRY
+------------------------------------------------------------------------------
+$ whoami && hostname
+hamzaimran
+DESKTOP-31BK2BG
+
+$ ip -br a
+lo               UNKNOWN        127.0.0.1/8 ::1/128
+eth0             UP             172.29.89.97/20 fe80::215:5dff:fea5:a9e7/64
+
+3. COMMAND EXECUTION & VERIFIABLE TERMINAL OUTPUTS
+------------------------------------------------------------------------------
+[Command 1: Auditing listening TCP/UDP sockets with process names and PIDs]
+$ sudo ss -tulpn
+--- [Output Start] ---
+Netid  State   Recv-Q  Send-Q     Local Address:Port      Peer Address:Port  Process
+udp    UNCONN  0       0             127.0.0.54:53             0.0.0.0:*      users:(("systemd-resolve",pid=93,fd=18))
+udp    UNCONN  0       0          127.0.0.53%lo:53             0.0.0.0:*      users:(("systemd-resolve",pid=93,fd=16))
+udp    UNCONN  0       0              127.0.0.1:323            0.0.0.0:*      users:(("chronyd",pid=285,fd=4))
+udp    UNCONN  0       0              127.0.0.1:323            0.0.0.0:*
+udp    UNCONN  0       0                  [::1]:323               [::]:*
+udp    UNCONN  0       0                  [::1]:323               [::]:*      users:(("chronyd",pid=285,fd=5))
+tcp    LISTEN  0       4096       127.0.0.53%lo:53             0.0.0.0:*      users:(("systemd-resolve",pid=93,fd=17))
+tcp    LISTEN  0       4096          127.0.0.54:53             0.0.0.0:*      users:(("systemd-resolve",pid=93,fd=19))
+--- [Output End] ---
+
+[Command 2: Mapping open network sockets to process binaries and user accounts]
+$ sudo lsof -i -P -n | head -n 15
+--- [Output Start] ---
+COMMAND    PID        USER FD   TYPE DEVICE SIZE/OFF NODE NAME
+systemd-r   93 systemd-resolve 16u  IPv4   1004      0t0  UDP 127.0.0.53:53
+systemd-r   93 systemd-resolve 17u  IPv4   1005      0t0  TCP 127.0.0.53:53 (LISTEN)
+systemd-r   93 systemd-resolve 18u  IPv4   1006      0t0  UDP 127.0.0.54:53
+systemd-r   93 systemd-resolve 19u  IPv4   1007      0t0  TCP 127.0.0.54:53 (LISTEN)
+chronyd    285        _chrony  4u  IPv4   4672      0t0  UDP 127.0.0.1:323
+chronyd    285        _chrony  5u  IPv6   4673      0t0  UDP [::1]:323
+--- [Output End] ---
+
+[Command 3: Inspecting local ARP neighbor cache and gateway MAC mapping]
+$ ip neighbor
+--- [Output Start] ---
+172.29.80.1 dev eth0 lladdr 00:15:5d:c7:aa:b9 STALE
+--- [Output End] ---
+
+4. ARCHITECTURAL REAL-WORLD APPLICATION & PROBLEM SOLVING
+------------------------------------------------------------------------------
+[Audit Target 1: Listening Socket Telemetry (`ss -tulpn`)]
+* Purpose: Identifying active network listeners, transport protocols (TCP/UDP), bound local IP addresses, and process owners.
+* Security/System Risk: Unrecognized daemons opening wildcard network sockets (`0.0.0.0:*` or `*:*`) expose internal systems to remote unauthorized access.
+* Practical Action: Verifying that all open sockets are bound exclusively to internal loopback addresses (`127.0.0.53`, `127.0.0.1`) ensures zero public network attack exposure.
+
+[Audit Target 2: Socket File Descriptor Mapping (`lsof -i`)]
+* Purpose: Mapping active sockets back to Linux process binaries, system accounts (`systemd-resolve`, `_chrony`), and open file descriptors (FD `16u`, `17u`).
+* Security/System Risk: Rogue binaries disguising process names or hooking unprivileged ports to establish hidden backdoors.
+* Practical Action: Cross-referencing `ss` data with `lsof` verifies that network communication endpoints belong to legitimate system daemons with proper file descriptor handles.
+
+[Audit Target 3: Layer-2/Layer-3 Neighbor Verification (`ip neighbor`)]
+* Purpose: Auditing the Address Resolution Protocol (ARP) table to map the default gateway IP (`172.29.80.1`) to its physical/virtual MAC address (`00:15:5d:c7:aa:b9`).
+* Security/System Risk: Unverified MAC address changes can indicate ARP spoofing or Man-in-the-Middle (MitM) positioning on a local network segment.
+* Practical Action: Checking the neighbor cache confirms proper layer-2 gateway resolution within the WSL virtual hypervisor switch.
+
+5. KEY TECHNICAL LESSONS
+------------------------------------------------------------------------------
+* `systemd-resolved` (PID 93) operates as the local stub resolver, maintaining isolated DNS sockets on loopback endpoints `127.0.0.53:53` and `127.0.0.54:53`.
+* `lsof -i -P -n` explicitly links open internet sockets to system user accounts (`systemd-resolve`, `_chrony`) and file descriptor IDs.
+* `ip neighbor` tracks local gateway states (`STALE` indicates an idle ARP entry that will automatically refresh upon the next outbound network request).
+* Current system posture maintains zero external network listeners, satisfying baseline attack surface minimization standards.
+==============================================================================
