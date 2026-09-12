@@ -1,0 +1,89 @@
+==============================================================================
+AUTONOMOUS CYBER DEFENSE - DAILY TECHNICAL LOG
+==============================================================================
+DATE & TIMESTAMP : Sat Sep 12 18:13:34 PKT 2026
+HOSTNAME & USER  : hamzaimran@DESKTOP-31BK2BG
+OS ENVIRONMENT   : Native Ubuntu Linux (WSL2)
+CURRENT PHASE    : Phase 1 (Core Architecture & Infrastructure Hardening)
+DAY & TOPIC      : Day 08 - Kernel Parameter Auditing & Runtime Hardening
+==============================================================================
+
+1. DAILY OBJECTIVE
+------------------------------------------------------------------------------
+Audit low-level Linux kernel parameters using `sysctl` and inspect the virtual 
+`/proc/sys/net/ipv4/` filesystem to evaluate kernel-level networking defenses 
+against IP forwarding, SYN floods, ICMP redirects, and IP spoofing.
+
+2. SYSTEM CONTEXT & LOCAL TELEMETRY
+------------------------------------------------------------------------------
+$ whoami && hostname
+hamzaimran
+DESKTOP-31BK2BG
+
+$ ip -br a
+lo               UNKNOWN        127.0.0.1/8 ::1/128
+eth0             UP             172.29.89.97/20 fe80::215:5dff:fea5:a9e7/64
+
+3. COMMAND EXECUTION & VERIFIABLE TERMINAL OUTPUTS
+------------------------------------------------------------------------------
+[Command 1: Auditing IPv4 network security parameters via sysctl]
+$ sudo sysctl -a | grep -E "net.ipv4.ip_forward|net.ipv4.tcp_syncookies|net.ipv4.conf.all.accept_redirects"
+--- [Output Start] ---
+net.ipv4.conf.all.accept_redirects = 0
+net.ipv4.ip_forward = 0
+net.ipv4.ip_forward_update_priority = 1
+net.ipv4.ip_forward_use_pmtu = 0
+net.ipv4.tcp_syncookies = 1
+--- [Output End] ---
+
+[Command 2: Reading raw kernel parameters from the /proc virtual filesystem]
+$ cat /proc/sys/net/ipv4/ip_forward
+--- [Output Start] ---
+0
+--- [Output End] ---
+
+$ cat /proc/sys/net/ipv4/tcp_syncookies
+--- [Output Start] ---
+1
+--- [Output End] ---
+
+[Command 3: Checking broadcast ICMP echo controls]
+$ sudo sysctl net.ipv4.icmp_echo_ignore_broadcasts
+--- [Output Start] ---
+net.ipv4.icmp_echo_ignore_broadcasts = 1
+--- [Output End] ---
+
+[Command 4: Verifying Reverse Path Filtering posture]
+$ sudo sysctl net.ipv4.conf.all.rp_filter
+--- [Output Start] ---
+net.ipv4.conf.all.rp_filter = 2
+--- [Output End] ---
+
+4. ARCHITECTURAL REAL-WORLD APPLICATION & PROBLEM SOLVING
+------------------------------------------------------------------------------
+[Parameter Target 1: IP Forwarding (`net.ipv4.ip_forward = 0`)]
+* Purpose: Restricts the Linux kernel from acting as a network router between interfaces.
+* Security Risk: Enabled IP forwarding allows attackers on compromised subnet segments to route unauthorized traffic through your system.
+* Practical Action: Verifying `0` guarantees host isolation and prevents lateral movement bridging within virtual hypervisor switches.
+
+[Parameter Target 2: TCP SYN Flood Protection (`net.ipv4.tcp_syncookies = 1`)]
+* Purpose: Enables cryptographic SYN cookies when the kernel's TCP connection backlog queue fills up.
+* Security Risk: High-volume SYN flood DoS attacks exhaust RAM connection tables, dropping legitimate incoming traffic.
+* Practical Action: Setting `1` allows the system to remain responsive during transport-layer Denial-of-Service attacks.
+
+[Parameter Target 3: ICMP Redirect Dropping (`accept_redirects = 0`)]
+* Purpose: Ignores ICMP redirect messages sent by network routers.
+* Security Risk: Malicious nodes can send forged ICMP redirect packets to alter system routing tables dynamically (Man-in-the-Middle positioning).
+* Practical Action: Disabling redirects forces reliance strictly on static local routing definitions.
+
+[Parameter Target 4: Reverse Path Filtering (`rp_filter = 2`)]
+* Purpose: Enables loose Reverse Path Validation according to RFC 3704.
+* Security Risk: IP spoofing attacks mask packet origins to bypass access control lists.
+* Practical Action: Mode `2` verifies that incoming packets have a reachable route in the local routing table, dropping spoofed packets from unroutable sources.
+
+5. KEY TECHNICAL LESSONS
+------------------------------------------------------------------------------
+* `/proc/sys/` provides direct access to kernel memory variables exposed as standard text files.
+* `sysctl -a` queries active runtime memory configurations without needing to restart services or reboot.
+* Ubuntu's default kernel baseline enforces strict low-level protections (`tcp_syncookies=1`, `ip_forward=0`, `accept_redirects=0`), aligning with baseline hardening frameworks.
+==============================================================================
