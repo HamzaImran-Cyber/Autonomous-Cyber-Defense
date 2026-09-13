@@ -1,0 +1,95 @@
+==============================================================================
+AUTONOMOUS CYBER DEFENSE - DAILY TECHNICAL LOG
+==============================================================================
+DATE & TIMESTAMP : Sun Sep 13 18:30:00 PKT 2026
+HOSTNAME & USER  : hamzaimran@DESKTOP-31BK2BG
+OS ENVIRONMENT   : Native Ubuntu Linux (WSL2)
+CURRENT PHASE    : Phase 1 (Core Architecture & Infrastructure Hardening)
+DAY & TOPIC      : Day 09 - User Identity, File Permissions & Privilege Escalation
+==============================================================================
+
+1. DAILY OBJECTIVE
+------------------------------------------------------------------------------
+Audit system user accounts for unauthorized superuser access (UID 0), verify file 
+permissions on identity databases (`/etc/passwd`, `/etc/shadow`, `/etc/sudoers`), 
+inspect password aging limits, and audit active administrative escalation rules.
+
+2. SYSTEM CONTEXT & LOCAL TELEMETRY
+------------------------------------------------------------------------------
+$ whoami && hostname
+hamzaimran
+DESKTOP-31BK2BG
+
+$ ip -br a
+lo               UNKNOWN        127.0.0.1/8 ::1/128
+eth0             UP             172.29.89.97/20 fe80::215:5dff:fea5:a9e7/64
+
+3. COMMAND EXECUTION & VERIFIABLE TERMINAL OUTPUTS
+------------------------------------------------------------------------------
+[Command 1: Auditing /etc/passwd for accounts with User ID 0]
+$ awk -F: '$3 == 0 { print $1,$3 }' /etc/passwd
+--- [Output Start] ---
+root 0
+--- [Output End] ---
+
+[Command 2: Checking file permissions and ownership on system identity files]
+$ ls -l /etc/passwd /etc/shadow /etc/sudoers
+--- [Output Start] ---
+-rw-r--r-- 1 root root   1388 Sep  2 19:38 /etc/passwd
+-rw-r----- 1 root shadow  782 Sep  2 19:39 /etc/shadow
+-r--r----- 1 root root   1800 Jan 21  2026 /etc/sudoers
+--- [Output End] ---
+
+[Command 3: Auditing password aging and account expiration controls]
+$ sudo chage -l hamzaimran
+--- [Output Start] ---
+Last password change                                    : Sep 02, 2026
+Password expires                                        : never
+Password inactive                                       : never
+Account expires                                         : never
+Minimum number of days between password change          : 0
+Maximum number of days between password change          : 99999
+Number of days of warning before password expires       : 7
+--- [Output End] ---
+
+[Command 4: Filtering active administrative rules from /etc/sudoers]
+$ sudo grep -v '^#' /etc/sudoers | grep -v '^$'
+--- [Output Start] ---
+Defaults        env_reset
+Defaults        mail_badpass
+Defaults        secure_path="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin"
+Defaults        use_pty
+root    ALL=(ALL:ALL) ALL
+%admin ALL=(ALL) ALL
+%sudo   ALL=(ALL:ALL) ALL
+@includedir /etc/sudoers.d
+--- [Output End] ---
+
+4. ARCHITECTURAL REAL-WORLD APPLICATION & PROBLEM SOLVING
+------------------------------------------------------------------------------
+[Audit Target 1: Checking for Hidden Superusers (`root 0`)]
+* Purpose: Scans the user database to find any account given complete control over Linux.
+* Security Risk: Attackers often create secret accounts with User ID `0` to grant themselves permanent root access without using the name "root".
+* Practical Action: Returning only `root 0` confirms no rogue superuser accounts exist on the system.
+
+[Audit Target 2: Identity File Access Controls (`ls -l`)]
+* Purpose: Verifies who is allowed to read or change system user and password files.
+* Security Risk: If unprivileged users can read `/etc/shadow`, they can copy encrypted password hashes and crack them offline.
+* Practical Action: `/etc/shadow` permissions (`-rw-r-----`) restrict access exclusively to root and the shadow group, keeping encrypted hashes secure.
+
+[Audit Target 3: Password Age and Expiration (`chage -l`)]
+* Purpose: Checks how often a user must change their password and whether an account expires.
+* Security Risk: Passwords that never expire increase long-term compromise risk if stolen or leaked.
+* Practical Action: Standard development environments default to `never` (99999 days), but enterprise production servers enforce periodic rotation (e.g., 90 days).
+
+[Audit Target 4: Administrative Rights (`/etc/sudoers`)]
+* Purpose: Audits which user groups are allowed to run administrative commands.
+* Security Risk: Loose rules can allow standard users to gain root access without entering a password.
+* Practical Action: The rules confirm that only the `root` user and members of the `%sudo` group can elevate privileges, requiring standard password authentication.
+
+5. KEY TECHNICAL LESSONS
+------------------------------------------------------------------------------
+* User ID `0` is what grants full administrative rights in Linux, not the text name "root".
+* `/etc/passwd` is world-readable so applications can map UIDs to usernames, but `/etc/shadow` must remain strictly restricted to protect password hashes.
+* Combining `grep -v '^#'` and `grep -v '^$'` strips away background noise to highlight operational security rules instantly.
+==============================================================================
