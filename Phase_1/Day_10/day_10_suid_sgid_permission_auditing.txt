@@ -1,0 +1,87 @@
+==============================================================================
+AUTONOMOUS CYBER DEFENSE - DAILY TECHNICAL LOG
+==============================================================================
+DATE & TIMESTAMP : Mon Sep 14 18:30:00 PKT 2026
+HOSTNAME & USER  : hamzaimran@DESKTOP-31BK2BG
+OS ENVIRONMENT   : Native Ubuntu Linux (WSL2)
+CURRENT PHASE    : Phase 1 (Core Architecture & Infrastructure Hardening)
+DAY & TOPIC      : Day 10 - SUID/SGID Binary Auditing & Privilege Risk Mapping
+==============================================================================
+
+1. DAILY OBJECTIVE
+------------------------------------------------------------------------------
+Audit system binaries carrying SUID (4000) and SGID (2000) permission flags using 
+`find` with file-system boundaries (`-xdev`), and identify world-writable directories 
+lacking sticky bit protections to prevent local privilege escalation.
+
+2. SYSTEM CONTEXT & LOCAL TELEMETRY
+------------------------------------------------------------------------------
+$ whoami && hostname
+hamzaimran
+DESKTOP-31BK2BG
+
+$ ip -br a
+lo               UNKNOWN        127.0.0.1/8 ::1/128
+eth0             UP             172.29.89.97/20 fe80::215:5dff:fea5:a9e7/64
+
+3. COMMAND EXECUTION & VERIFIABLE TERMINAL OUTPUTS
+------------------------------------------------------------------------------
+[Command 1: Auditing SUID binaries restricted to the Linux file system]
+$ sudo find / -xdev -perm -4000 -type f 2>/dev/null | head -n 15
+--- [Output Start] ---
+/usr/bin/passwd
+/usr/bin/gpasswd
+/usr/bin/chsh
+/usr/bin/sudo.ws
+/usr/bin/fusermount3
+/usr/bin/mount
+/usr/bin/umount
+/usr/bin/su
+/usr/bin/chfn
+/usr/lib/dbus-1.0/dbus-daemon-launch-helper
+/usr/lib/openssh/ssh-keysign
+/usr/lib/landscape/apt-update
+/usr/lib/cargo/bin/sudo
+/usr/lib/cargo/bin/su
+--- [Output End] ---
+
+[Command 2: Auditing SGID binaries across system paths]
+$ sudo find / -xdev -perm -2000 -type f 2>/dev/null | head -n 15
+--- [Output Start] ---
+/usr/bin/crontab
+/usr/bin/chage
+/usr/bin/expiry
+/usr/bin/ssh-agent
+/usr/sbin/pam_extrausers_chkpwd
+/usr/sbin/unix_chkpwd
+--- [Output End] ---
+
+[Command 3: Locating world-writable directories lacking sticky bit protection]
+$ sudo find / -xdev -maxdepth 3 -perm -0002 -type d ! -perm -1000 2>/dev/null
+--- [Output Start] ---
+/mnt/c
+--- [Output End] ---
+
+4. ARCHITECTURAL REAL-WORLD APPLICATION & PROBLEM SOLVING
+------------------------------------------------------------------------------
+[Audit Target 1: SUID Executables (`-perm -4000`)]
+* Purpose: Lists files configured to run with the permissions of the file owner (root) rather than the user running them.
+* Security Risk: If an unapproved binary (like a custom script or shell) is given SUID permissions, an attacker can exploit it to instantly gain root control.
+* Practical Action: Validated that all active SUID binaries are legitimate OS administration tools (`passwd`, `sudo`, `mount`).
+
+[Audit Target 2: SGID Executables (`-perm -2000`)]
+* Purpose: Lists files configured to run with the permissions of the assigned group rather than the user running them.
+* Security Risk: Misconfigured SGID files can allow users to alter shared system files or read restricted group logs.
+* Practical Action: Confirmed that listed SGID binaries (`crontab`, `chage`, `ssh-agent`) are limited to system account management and authentication processes.
+
+[Audit Target 3: World-Writable Directory Check (`! -perm -1000`)]
+* Purpose: Scans for shared folders where anyone can write files, but checks if the sticky bit protection is missing.
+* Security Risk: Shared directories without sticky bits allow any user to delete or overwrite files created by other users or the root account.
+* Practical Action: Native Linux system paths (`/tmp`, `/var/tmp`) passed cleanly. `/mnt/c` appeared only because it bridges to the external Windows C: drive file system.
+
+5. KEY TECHNICAL LESSONS
+------------------------------------------------------------------------------
+* Using `-xdev` isolates the search to the Linux file system, preventing `find` from wasting system resources scanning mounted Windows drives (`/mnt/c`).
+* SUID (`4000`) and SGID (`2000`) are necessary for tools like `passwd` (which updates `/etc/shadow`), but auditing them periodically ensures no malicious binaries are left behind.
+* The sticky bit (`1000`) acts as a critical safety lock on shared folders, ensuring users can only delete files they personal own.
+==============================================================================
