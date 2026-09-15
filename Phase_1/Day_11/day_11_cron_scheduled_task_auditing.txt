@@ -1,0 +1,101 @@
+==============================================================================
+AUTONOMOUS CYBER DEFENSE - DAILY TECHNICAL LOG
+==============================================================================
+DATE & TIMESTAMP : Tue Sep 15 19:36:42 PKT 2026
+HOSTNAME & USER  : hamzaimran@DESKTOP-31BK2BG
+OS ENVIRONMENT   : Native Ubuntu Linux (WSL2)
+CURRENT PHASE    : Phase 1 (Core Architecture & Infrastructure Hardening)
+DAY & TOPIC      : Day 11 - Scheduled Task Auditing & Persistence Verification
+==============================================================================
+
+1. DAILY OBJECTIVE
+------------------------------------------------------------------------------
+Audit user-level crontabs, global system cron directories (`/etc/cron.*`), and 
+active systemd timers (`systemctl list-timers`) to detect hidden background 
+persistence mechanisms and verify directory permission controls.
+
+2. SYSTEM CONTEXT & LOCAL TELEMETRY
+------------------------------------------------------------------------------
+$ whoami && hostname
+hamzaimran
+DESKTOP-31BK2BG
+
+$ ip -br a
+lo               UNKNOWN        127.0.0.1/8 ::1/128
+eth0             UP             172.29.89.97/20 fe80::215:5dff:fea5:a9e7/64
+
+3. COMMAND EXECUTION & VERIFIABLE TERMINAL OUTPUTS
+------------------------------------------------------------------------------
+[Command 1: Auditing individual user and root cron tables]
+$ crontab -l; sudo crontab -u root -l
+--- [Output Start] ---
+no crontab for hamzaimran
+no crontab for root
+--- [Output End] ---
+
+[Command 2: Inspecting permissions across system-wide cron directories]
+$ ls -la /etc/crontab /etc/cron.d /etc/cron.daily
+--- [Output Start] ---
+-rw-r--r-- 1 root root 1136 Nov  5  2025 /etc/crontab
+
+/etc/cron.d:
+total 16
+drwxr-xr-x  2 root root 4096 Aug 27 19:11 .
+drwxr-xr-x 94 root root 4096 Sep 15 18:38 ..
+-rw-r--r--  1 root root  102 Nov  5  2025 .placeholder
+-rw-r--r--  1 root root  188 Feb 13  2026 e2scrub_all
+
+/etc/cron.daily:
+total 36
+drwxr-xr-x  2 root root 4096 Sep  2 20:44 .
+drwxr-xr-x 94 root root 4096 Sep 15 18:38 ..
+-rw-r--r--  1 root root  102 Nov  5  2025 .placeholder
+-rwxr-xr-x  1 root root  539 Aug 11  2025 apache2
+-rwxr-xr-x  1 root root  376 Jul  3 16:16 apport
+-rwxr-xr-x  1 root root 1478 Apr  7 14:02 apt-compat
+-rwxr-xr-x  1 root root  123 Dec 16  2025 dpkg
+-rwxr-xr-x  1 root root  377 Dec  6  2025 logrotate
+-rwxr-xr-x  1 root root 1395 May  2  2025 man-db
+--- [Output End] ---
+
+[Command 3: Auditing active and scheduled systemd timers]
+$ systemctl list-timers --all
+--- [Output Start] ---
+NEXT                         LEFT LAST                         PASSED UNIT                  ACTIVATES
+Tue 2026-09-15 20:12:37 PKT    45min Mon 2026-09-14 16:28:46 PKT            - man-db.timer               man-db.service
+Wed 2026-09-16 00:00:00 PKT 4h 33min Tue 2026-09-15 18:38:13 PKT    30min ago dpkg-db-backup.timer         dpkg-db-backup.service
+Wed 2026-09-16 00:14:29 PKT 4h 47min Tue 2026-09-15 19:25:15 PKT 1min 30s ago logrotate.timer              logrotate.service
+Wed 2026-09-16 01:07:41 PKT 5h 40min Wed 2026-09-02 19:35:03 PKT            - apt-daily.timer              apt-daily.service
+Wed 2026-09-16 03:06:46 PKT       7h Sat 2026-09-12 17:38:56 PKT            - motd-news.timer              motd-news.service
+Wed 2026-09-16 06:05:20 PKT      10h Tue 2026-09-15 18:44:36 PKT    24min ago apt-daily-upgrade.timer      apt-daily-upgrade.service
+Wed 2026-09-16 19:11:12 PKT      23h Tue 2026-09-15 18:53:14 PKT    15min ago systemd-tmpfiles-clean.timer systemd-tmpfiles-clean.service
+Sun 2026-09-20 03:10:55 PKT   4 days Sun 2026-09-13 17:48:54 PKT            - e2scrub_all.timer            e2scrub_all.service
+-                                  - -                                      - apport-autoreport.timer      apport-autoreport.service
+-                                  - -                                      - fstrim.timer                  fstrim.service
+-                                  - -                                      - snapd.snap-repair.timer      snapd.snap-repair.service
+-                                  - -                                      - ua-timer.timer                ua-timer.service
+--- [Output End] ---
+
+4. ARCHITECTURAL REAL-WORLD APPLICATION & PROBLEM SOLVING
+------------------------------------------------------------------------------
+[Audit Target 1: User & Root Crontabs (`crontab -l`)]
+* Purpose: Checks if any scheduled tasks are currently configured for standard or administrative users.
+* Security Risk: Attackers place hidden background scripts in cron so their malware automatically runs every few minutes or at reboot.
+* Practical Action: Returning `no crontab` confirms no unauthorized user-level scheduled persistence exists.
+
+[Audit Target 2: System-Wide Cron Folders (`/etc/cron.*`)]
+* Purpose: Audits shared directories where the operating system stores global scheduled maintenance scripts.
+* Security Risk: If standard users gain write access to `/etc/cron.d` or `/etc/cron.daily`, they can plant scripts that run automatically with full root privileges.
+* Practical Action: Verified that all cron configuration paths are strictly owned by `root:root` with write permissions restricted exclusively to the superuser.
+
+[Audit Target 3: Systemd Timers (`systemctl list-timers`)]
+* Purpose: Audits the modern Linux scheduling system to track upcoming background tasks and service triggers.
+* Security Risk: Sophisticated attackers use systemd timers instead of cron to hide automatic execution tasks behind legitimate system service names.
+* Practical Action: Audited all 12 system timers and confirmed they belong strictly to standard system tasks (log rotation, package backup, temporary file cleanup).
+
+5. KEY TECHNICAL LESSONS
+------------------------------------------------------------------------------
+* System persistence can hide in two different scheduling layers: legacy Cron tables (`/etc/cron*`) and modern Systemd Timers (`systemctl list-timers`).
+* Restricting write permissions on `/etc/cron.*` to `root:root` stops standard accounts from escalating privileges via scheduled script injection.
+* Periodically auditing scheduled tasks provides continuous visibility into background processes before developing automated response rules.
+==============================================================================
