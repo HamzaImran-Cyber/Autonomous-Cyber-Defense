@@ -1,0 +1,110 @@
+==============================================================================
+AUTONOMOUS CYBER DEFENSE - DAILY TECHNICAL LOG
+==============================================================================
+DATE & TIMESTAMP : Wed Sep 16 19:30:00 PKT 2026
+HOSTNAME & USER  : hamzaimran@DESKTOP-31BK2BG
+OS ENVIRONMENT   : Native Ubuntu Linux (WSL2)
+CURRENT PHASE    : Phase 1 (Core Architecture & Infrastructure Hardening)
+DAY & TOPIC      : Day 12 - PAM Authentication & Login Security Auditing
+==============================================================================
+
+1. DAILY OBJECTIVE
+------------------------------------------------------------------------------
+Audit system authentication files in `/etc/pam.d/`, inspect how Linux checks user 
+passwords, verify modern password encryption settings (`yescrypt`), and review 
+failed login lockout rules inside `faillock.conf`.
+
+2. SYSTEM CONTEXT & LOCAL TELEMETRY
+------------------------------------------------------------------------------
+$ whoami && hostname
+hamzaimran
+DESKTOP-31BK2BG
+
+$ ip -br a
+lo               UNKNOWN        127.0.0.1/8 ::1/128
+eth0             UP             172.29.89.97/20 fe80::215:5dff:fea5:a9e7/64
+
+3. COMMAND EXECUTION & VERIFIABLE TERMINAL OUTPUTS
+------------------------------------------------------------------------------
+[Command 1: Listing security rule files for system tools]
+$ ls -l /etc/pam.d/
+--- [Output Start] ---
+total 80
+-rw-r--r-- 1 root root  384 May  7  2025 chfn
+-rw-r--r-- 1 root root   92 May  7  2025 chpasswd
+-rw-r--r-- 1 root root  581 May  7  2025 chsh
+-rw-r--r-- 1 root root 1208 Sep 10 18:46 common-account
+-rw-r--r-- 1 root root 1242 Sep 10 18:46 common-auth
+-rw-r--r-- 1 root root 1620 Sep 10 18:46 common-password
+-rw-r--r-- 1 root root 1461 Sep 10 18:46 common-session
+-rw-r--r-- 1 root root 1435 Sep 10 18:46 common-session-noninteractive
+-rw-r--r-- 1 root root  606 Nov  5  2025 cron
+-rw-r--r-- 1 root root 3974 Mar 13  2026 login
+-rw-r--r-- 1 root root   92 May  7  2025 newusers
+-rw-r--r-- 1 root root  520 Jul  3  2025 other
+-rw-r--r-- 1 root root   92 May  7  2025 passwd
+-rw-r--r-- 1 root root 3655 Feb 16  2026 remote
+-rw-r--r-- 1 root root  143 May 27  2025 runuser
+-rw-r--r-- 1 root root  138 May 27  2025 runuser-l
+-rw-r--r-- 1 root root 2259 May 27  2025 su
+-rw-r--r-- 1 root root  137 May 27  2025 su-l
+-rw-r--r-- 1 root root  330 Jan 14  2026 sudo
+-rw-r--r-- 1 root root  315 Jan 14  2026 sudo-i
+--- [Output End] ---
+
+[Command 2: Checking how the system verifies standard passwords]
+$ grep -v '^#' /etc/pam.d/common-auth | grep -v '^$'
+--- [Output Start] ---
+auth    [success=1 default=ignore]      pam_unix.so nullok
+auth    requisite                       pam_deny.so
+auth    required                        pam_permit.so
+auth    optional                        pam_cap.so
+--- [Output End] ---
+
+[Command 3: Checking password creation rules and encryption methods]
+$ grep -v '^#' /etc/pam.d/common-password | grep -v '^$'
+--- [Output Start] ---
+password        [success=1 default=ignore]      pam_unix.so obscure yescrypt
+password        requisite                       pam_deny.so
+password        required                        pam_permit.so
+--- [Output End] ---
+
+[Command 4: Inspecting rules for handling wrong password attempts]
+$ sudo cat /etc/security/faillock.conf 2> /dev/null || grep -iE "faillock|deny|pam_unix" /etc/pam.d/common-auth
+--- [Output Start] ---
+# Configuration for locking the user after multiple failed
+# authentication attempts.
+# ...
+# deny = 3
+# fail_interval = 900
+# unlock_time = 600
+--- [Output End] ---
+
+4. ARCHITECTURAL REAL-WORLD APPLICATION & PROBLEM SOLVING
+------------------------------------------------------------------------------
+[Audit Target 1: System Security Checklist Directory (`/etc/pam.d/`)]
+* Purpose: Stores security rule files for programs like `sudo`, `su`, and `login`.
+* Security Risk: If an attacker modifies these files, they could trick tools into letting users log in without a password.
+* Practical Action: Verified that all files are locked down so only `root` can modify them (`-rw-r--r--`).
+
+[Audit Target 2: Standard Login Verification (`common-auth`)]
+* Purpose: Defines how Linux checks your password when you log in or run administrative commands.
+* Security Risk: Weak settings could allow blank passwords or bypass identity checks completely.
+* Practical Action: Verified that `pam_unix.so` checks passwords against system files while stopping unauthorized access with `pam_deny.so`.
+
+[Audit Target 3: Password Encryption Strength (`common-password`)]
+* Purpose: Controls how new passwords are scrambled before being saved to disk.
+* Security Risk: Using old scrambling methods makes it easy for attackers to decode stolen password files.
+* Practical Action: Confirmed that Ubuntu uses `yescrypt`, a modern, super-strong scrambling method that protects stored passwords from guessing attacks.
+
+[Audit Target 4: Wrong Password Protection (`faillock.conf`)]
+* Purpose: Sets rules for locking out accounts after too many failed password attempts.
+* Security Risk: Without lockout limits, automated tools can guess millions of passwords a minute until they get in.
+* Practical Action: Audited default settings that lock an account for 10 minutes (`unlock_time = 600`) after 3 bad attempts (`deny = 3`) within 15 minutes.
+
+5. KEY TECHNICAL LESSONS
+------------------------------------------------------------------------------
+* Linux uses reusable security checklists (`/etc/pam.d/`) so every tool follows the same login rules.
+* `yescrypt` keeps stored passwords safe by making them extremely hard for attackers to crack offline.
+* Setting lockout rules stops automated tools from guessing passwords over and over again.
+==============================================================================
