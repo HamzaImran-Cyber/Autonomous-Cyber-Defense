@@ -1,0 +1,84 @@
+==============================================================================
+AUTONOMOUS CYBER DEFENSE - DAILY TECHNICAL LOG
+==============================================================================
+DATE & TIMESTAMP : Thu Sep 17 18:54:00 PKT 2026
+HOSTNAME & USER  : hamzaimran@DESKTOP-31BK2BG
+OS ENVIRONMENT   : Native Ubuntu Linux (WSL2)
+CURRENT PHASE    : Phase 1 (Core Architecture & Infrastructure Hardening)
+DAY & TOPIC      : Day 13 - SSH Server Security & Remote Access Control Auditing
+==============================================================================
+
+1. DAILY OBJECTIVE
+------------------------------------------------------------------------------
+Audit SSH server configuration settings (`sshd_config`), inspect live runtime 
+remote access rules using `sshd -T`, and verify file ownership and secret key 
+permission locks on SSH host keys (`/etc/ssh/ssh_host_*_key`).
+
+2. SYSTEM CONTEXT & LOCAL TELEMETRY
+------------------------------------------------------------------------------
+$ whoami && hostname
+hamzaimran
+DESKTOP-31BK2BG
+
+$ ip -br a
+lo               UNKNOWN        127.0.0.1/8 ::1/128
+eth0             UP             172.29.89.97/20 fe80::215:5dff:fea5:a9e7/64
+
+3. COMMAND EXECUTION & VERIFIABLE TERMINAL OUTPUTS
+------------------------------------------------------------------------------
+[Command 1: Checking written settings in the SSH configuration file]
+$ grep -iE "PermitRootLogin|PasswordAuthentication|PubkeyAuthentication|MaxAuthTries|X11Forwarding" /etc/ssh/sshd_config
+--- [Output Start] ---
+#PermitRootLogin prohibit-password
+#MaxAuthTries 6
+#PubkeyAuthentication yes
+#PasswordAuthentication yes
+# PasswordAuthentication.  Depending on your PAM configuration,
+# the setting of "PermitRootLogin prohibit-password".
+# PAM authentication, then enable this but set PasswordAuthentication
+X11Forwarding yes
+#       X11Forwarding no
+--- [Output End] ---
+
+[Command 2: Checking effective active rules loaded by the SSH server]
+$ sudo sshd -T | grep -iE "permitrootlogin|passwordauthentication|pubkeyauthentication|maxauthtries|x11forwarding"
+--- [Output Start] ---
+maxauthtries 6
+permitrootlogin prohibit-password
+pubkeyauthentication yes
+passwordauthentication yes
+x11forwarding yes
+--- [Output End] ---
+
+[Command 3: Auditing file permissions on SSH settings and secret host keys]
+$ ls -l /etc/ssh/sshd_config /etc/ssh/ssh_host_*_key 2>/dev/null
+--- [Output Start] ---
+-rw------- 1 root root  513 Sep 17 18:49 /etc/ssh/ssh_host_ecdsa_key
+-rw------- 1 root root  411 Sep 17 18:49 /etc/ssh/ssh_host_ed25519_key
+-rw------- 1 root root 2610 Sep 17 18:49 /etc/ssh/ssh_host_rsa_key
+-rw-r--r-- 1 root root 4307 Aug 31 23:36 /etc/ssh/sshd_config
+--- [Output End] ---
+
+4. ARCHITECTURAL REAL-WORLD APPLICATION & PROBLEM SOLVING
+------------------------------------------------------------------------------
+[Audit Target 1: Written Config vs. Runtime Defaults (`sshd -T`)]
+* Purpose: Compares lines written inside `/etc/ssh/sshd_config` against what the server actually enforces in memory.
+* Security Risk: Many settings in configuration files are commented out with `#`, relying on built-in defaults that might not be obvious at first glance.
+* Practical Action: Querying `sshd -T` confirms that the server defaults to safe options like `permitrootlogin prohibit-password`.
+
+[Audit Target 2: Root Login Rules (`permitrootlogin prohibit-password`)]
+* Purpose: Controls whether the main administrator (`root`) can log in remotely over the network.
+* Security Risk: Allowing password logins directly as `root` invites automated guessing attacks against the most powerful account on the machine.
+* Practical Action: Confirmed that root cannot log in using a password. Remote root logins are strictly restricted to verified SSH key pairs.
+
+[Audit Target 3: Secret Host Key Permissions (`-rw-------`)]
+* Purpose: Inspects file permissions on the server's private identity keys (`ecdsa`, `ed25519`, `rsa`).
+* Security Risk: If standard users can read these private keys, they can impersonate the server and steal encrypted traffic.
+* Practical Action: Confirmed that all private key files enforce strict `-rw-------` permissions, meaning only `root` can access them.
+
+5. KEY TECHNICAL LESSONS
+------------------------------------------------------------------------------
+* Commented lines (`#`) in `/etc/ssh/sshd_config` mean the server falls back to its built-in system defaults.
+* Always use `sshd -T` to verify what rules the SSH server is actively enforcing in memory.
+* Secret server host keys must strictly stay locked to `0600` (`-rw-------`) owned by `root:root`.
+==============================================================================
