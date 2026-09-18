@@ -1,0 +1,104 @@
+==============================================================================
+AUTONOMOUS CYBER DEFENSE - DAILY TECHNICAL LOG
+==============================================================================
+DATE & TIMESTAMP : Fri Sep 18 19:30:00 PKT 2026
+HOSTNAME & USER  : hamzaimran@DESKTOP-31BK2BG
+OS ENVIRONMENT   : Native Ubuntu Linux (WSL2)
+CURRENT PHASE    : Phase 1 (Core Architecture & Infrastructure Hardening)
+DAY & TOPIC      : Day 14 - Filesystem Mount Hardening & Partition Security Auditing
+==============================================================================
+
+1. DAILY OBJECTIVE
+------------------------------------------------------------------------------
+Audit active storage mount points (`findmnt`), verify WSL system configuration 
+(`wsl.conf`), review disk space usage (`df -Th`), and evaluate security flags 
+(`nosuid`, `nodev`, `noexec`) on critical system and memory paths.
+
+2. SYSTEM CONTEXT & LOCAL TELEMETRY
+------------------------------------------------------------------------------
+$ whoami && hostname
+hamzaimran
+DESKTOP-31BK2BG
+
+$ ip -br a
+lo               UNKNOWN        127.0.0.1/8 ::1/128
+eth0             UP             172.29.89.97/20 fe80::215:5dff:fea5:a9e7/64
+
+3. COMMAND EXECUTION & VERIFIABLE TERMINAL OUTPUTS
+------------------------------------------------------------------------------
+[Command 1: Auditing active mount points and security flags]
+$ findmnt -l -o TARGET,FSTYPE,OPTIONS | head -n 15
+--- [Output Start] ---
+TARGET                                              FSTYPE        OPTIONS
+/usr/lib/modules/6.18.33.2-microsoft-standard-WSL2 overlay       rw,nosuid,nodev,noatime...
+/mnt/wsl                                            tmpfs         rw,relatime
+/usr/lib/wsl/drivers                                9p            ro,nosuid,nodev,noatime...
+/                                                   ext4          rw,relatime,discard,errors=remount-ro,data=ordered
+/mnt/wslg                                           tmpfs         rw,relatime
+/mnt/wslg/distro                                    ext4          ro,relatime,discard,errors=remount-ro,data=ordered
+/usr/lib/wsl/lib                                    overlay       rw,nosuid,nodev,noatime...
+/init                                               rootfs        ro,size=1967804k,nr_inodes=491951
+/dev                                                devtmpfs      rw,nosuid,relatime,size=1967804k,nr_inodes=491951,mode=755
+/sys                                                sysfs         rw,nosuid,nodev,noexec,noatime
+/proc                                               proc          rw,nosuid,nodev,noexec,noatime
+/dev/pts                                            devpts        rw,nosuid,noexec,noatime,gid=5,mode=620,ptmxmode=000
+/run                                                tmpfs         rw,nosuid,nodev,mode=755
+/run/lock                                           tmpfs         rw,nosuid,nodev,noexec,noatime
+--- [Output End] ---
+
+[Command 2: Checking WSL system configuration settings]
+$ cat /etc/wsl.conf 2>/dev/null || cat /etc/fstab
+--- [Output Start] ---
+[boot]
+systemd=true
+
+[user]
+default=hamzaimran
+--- [Output End] ---
+
+[Command 3: Auditing disk space and filesystem types]
+$ df -Th | head -n 10
+--- [Output Start] ---
+Filesystem      Type            Size  Used Avail Use% Mounted on
+none            overlay         1.9G     0  1.9G   0% /usr/lib/modules/6.18.33.2-microsoft-standard-WSL2
+none            tmpfs           1.9G  4.0K  1.9G   1% /mnt/wsl
+drivers         9p              238G   89G  150G  38% /usr/lib/wsl/drivers
+/dev/sdd        ext4           1007G  3.2G  953G   1% /
+none            tmpfs           1.9G   40K  1.9G   1% /mnt/wslg
+none            overlay         1.9G     0  1.9G   0% /usr/lib/wsl/lib
+rootfs          rootfs          1.9G  2.8M  1.9G   1% /init
+none            tmpfs           1.9G  764K  1.9G   1% /run
+none            tmpfs           1.9G     0  1.9G   0% /run/lock
+--- [Output End] ---
+
+[Command 4: Verifying specific mount flags on root and shared memory]
+$ mount | grep -E " on /|/dev/shm|/mnt/c" | head -n 15
+--- [Output Start] ---
+...
+proc on /proc type proc (rw,nosuid,nodev,noexec,noatime)
+none on /run/shm type tmpfs (rw,nosuid,nodev,noatime)
+--- [Output End] ---
+
+4. ARCHITECTURAL REAL-WORLD APPLICATION & PROBLEM SOLVING
+------------------------------------------------------------------------------
+[Audit Target 1: System Virtual Paths (`/proc`, `/sys`)]
+* Purpose: Checks access rules for folders where Linux exposes live kernel and hardware information.
+* Security Risk: If users can run scripts inside `/proc` or `/sys`, they can tamper with low-level system settings.
+* Practical Action: Confirmed that `/proc` and `/sys` enforce `noexec, nosuid, nodev`, preventing any code execution in kernel memory paths.
+
+[Audit Target 2: Shared Memory Hardening (`/run/shm`)]
+* Purpose: Audits temporary RAM storage used by applications to exchange data quickly.
+* Security Risk: Shared RAM folders are common targets for attackers trying to hide malicious temporary files.
+* Practical Action: Verified that `/run/shm` enforces `nosuid, nodev`, stopping malicious programs from gaining administrative powers via temporary memory.
+
+[Audit Target 3: Disk Error Protection (`errors=remount-ro`)]
+* Purpose: Checks how the system disk (`/`) reacts if a hardware or filesystem error occurs.
+* Security Risk: Allowing writes on a damaged disk can corrupt security logs and system files.
+* Practical Action: Confirmed that `/` includes `errors=remount-ro`, which instantly locks the disk into read-only mode if corruption occurs.
+
+5. KEY TECHNICAL LESSONS
+------------------------------------------------------------------------------
+* Applying `noexec`, `nosuid`, and `nodev` to system folders blocks common privilege escalation paths without affecting normal software operations.
+* System memory locations (`tmpfs`) run in RAM and clear automatically on reboot, making them prime targets to monitor during security audits.
+* Automated fail-safe rules (`errors=remount-ro`) keep filesystem integrity intact during unexpected system crashes.
+==============================================================================
