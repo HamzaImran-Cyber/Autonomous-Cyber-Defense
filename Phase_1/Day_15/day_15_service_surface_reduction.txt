@@ -1,0 +1,125 @@
+==============================================================================
+AUTONOMOUS CYBER DEFENSE - DAILY TECHNICAL LOG
+==============================================================================
+DATE & TIMESTAMP : Sat Sep 19 19:30:00 PKT 2026
+HOSTNAME & USER  : hamzaimran@DESKTOP-31BK2BG
+OS ENVIRONMENT   : Native Ubuntu Linux (WSL2)
+CURRENT PHASE    : Phase 1 (Core Architecture & Infrastructure Hardening)
+DAY & TOPIC      : Day 15 - Systemd Service Auditing & Attack Surface Reduction
+==============================================================================
+
+1. DAILY OBJECTIVE
+------------------------------------------------------------------------------
+Audit active memory daemons (`systemctl list-units`), review boot-enabled service 
+configurations (`systemctl list-unit-files`), identify degraded/failed units 
+(`systemctl --failed`), and evaluate background services for attack surface reduction.
+
+2. SYSTEM CONTEXT & LOCAL TELEMETRY
+------------------------------------------------------------------------------
+$ whoami && hostname
+hamzaimran
+DESKTOP-31BK2BG
+
+$ ip -br a
+lo               UNKNOWN        127.0.0.1/8 ::1/128
+eth0             UP             172.29.89.97/20 fe80::215:5dff:fea5:a9e7/64
+
+3. COMMAND EXECUTION & VERIFIABLE TERMINAL OUTPUTS
+------------------------------------------------------------------------------
+[Command 1: Auditing active running services in memory]
+$ systemctl list-units --type=service --state=running
+--- [Output Start] ---
+  UNIT                        LOAD   ACTIVE SUB     DESCRIPTION
+  chrony.service              loaded active running chrony, an NTP client/server
+  cron.service                loaded active running Regular background program processing daemon
+  dbus.service                loaded active running D-Bus System Message Bus
+  getty@tty1.service          loaded active running Getty on tty1
+  networkd-dispatcher.service loaded active running Dispatcher daemon for systemd-networkd
+  rsyslog.service             loaded active running System Logging Service
+  snapd.service               loaded active running Snap Daemon
+  systemd-journald.service    loaded active running Journal Service
+  systemd-logind.service      loaded active running User Login Management
+  systemd-resolved.service    loaded active running Network Name Resolution
+  systemd-udevd.service       loaded active running Rule-based Manager for Device Events and Files
+  unattended-upgrades.service loaded active running Unattended Upgrades Shutdown
+  user@1000.service           loaded active running User Manager for UID 1000
+  wsl-pro.service             loaded active running Bridge to Ubuntu Pro agent on Windows
+
+14 loaded units listed.
+--- [Output End] ---
+
+[Command 2: Auditing boot-enabled service configurations]
+$ systemctl list-unit-files --type=service --state=enabled
+--- [Output Start] ---
+UNIT FILE                               STATE   PRESET
+apparmor.service                        enabled enabled
+apport.service                          enabled enabled
+chrony.service                          enabled enabled
+cloud-config.service                    enabled enabled
+cloud-final.service                     enabled enabled
+cloud-init-local.service                enabled enabled
+cloud-init-main.service                 enabled enabled
+cloud-init-network.service              enabled enabled
+console-setup.service                   enabled enabled
+cron.service                            enabled enabled
+dmesg.service                           enabled enabled
+e2scrub_reap.service                    enabled enabled
+getty@.service                          enabled enabled
+keyboard-setup.service                  enabled enabled
+landscape-client.service                enabled enabled
+netplan-configure.service               enabled enabled
+networkd-dispatcher.service             enabled enabled
+rsyslog.service                         enabled enabled
+setvtrgb.service                        enabled enabled
+snapd.apparmor.service                  enabled enabled
+snapd.autoimport.service                enabled enabled
+snapd.core-fixup.service                enabled enabled
+snapd.recovery-chooser-trigger.service enabled enabled
+snapd.seeded.service                    enabled enabled
+snapd.service                           enabled enabled
+snapd.system-shutdown.service           enabled enabled
+sshd-keygen.service                     enabled enabled
+ssl-cert.service                        enabled enabled
+systemd-pstore.service                  enabled enabled
+systemd-resolved.service                enabled enabled
+ua-reboot-cmds.service                  enabled enabled
+ubuntu-advantage.service                enabled enabled
+ufw.service                             enabled enabled
+unattended-upgrades.service             enabled enabled
+wsl-pro.service                         enabled enabled
+wtmpdb-update-boot.service              enabled enabled
+
+36 unit files listed.
+--- [Output End] ---
+
+[Command 3: Auditing failed or degraded system services]
+$ systemctl --failed
+--- [Output Start] ---
+  UNIT LOAD ACTIVE SUB DESCRIPTION
+
+0 loaded units listed.
+--- [Output End] ---
+
+4. ARCHITECTURAL REAL-WORLD APPLICATION & PROBLEM SOLVING
+------------------------------------------------------------------------------
+[Audit Target 1: Active Execution Surface (14 Running Services)]
+* Purpose: Evaluate the minimal operational baseline in RAM.
+* Security Risk: Unnecessary running services consume memory and open IPC/network attack vectors.
+* Practical Action: Active memory footprint is tight and clean. Critical security daemons (`apparmor`, `ufw`, `unattended-upgrades`, `chrony`) are running cleanly.
+
+[Audit Target 2: Unnecessary Boot Bloat (`cloud-init` & `landscape-client`)]
+* Purpose: Identify enabled startup units that are unnecessary for WSL2 desktop development.
+* Security Risk: Services like `cloud-init` (designed for enterprise cloud VM provisioning) and `landscape-client` (Canonical remote management) increase boot time and execute elevated initialization tasks.
+* Practical Action: Flagged `cloud-init*.service`, `landscape-client.service`, and `apport.service` (crash reporting) as candidates for disabling/masking to reduce attack surface and system noise.
+
+[Audit Target 3: Failure Audit (`systemctl --failed`)]
+* Purpose: Check for unhandled crashes or broken service dependencies.
+* Security Risk: Repeatedly failing services can indicate corrupted binaries, denial-of-service attempts, or missing security dependencies.
+* Practical Action: Confirmed 0 failed units, establishing a healthy, stable operational baseline.
+
+5. KEY TECHNICAL LESSONS
+------------------------------------------------------------------------------
+* Differentiating between active memory states (`list-units`) and disk configuration states (`list-unit-files`) is essential for mapping persistent attack vectors.
+* Default Linux distributions enable cloud-provisioning tools (`cloud-init`) that are redundant in desktop/WSL environments and should be trimmed.
+* Disabling unwanted daemons cuts memory usage, speeds up system initialization, and reduces overall exposure to zero-day service exploits.
+==============================================================================
