@@ -1,0 +1,76 @@
+==============================================================================
+AUTONOMOUS CYBER DEFENSE - DAILY TECHNICAL LOG
+==============================================================================
+DATE & TIMESTAMP : Sun Sep 20 22:23:00 PKT 2026
+HOSTNAME & USER  : hamzaimran@DESKTOP-31BK2BG
+OS ENVIRONMENT   : Native Ubuntu Linux (WSL2)
+CURRENT PHASE    : Phase 1 (Core Architecture & Infrastructure Hardening)
+DAY & TOPIC      : Day 16 - File Integrity Monitoring (FIM) & Extended Attributes
+==============================================================================
+
+1. DAILY OBJECTIVE
+------------------------------------------------------------------------------
+Inspect extended filesystem attributes (`lsattr`), establish cryptographic baseline 
+hashes (`sha256sum`) for critical identity and SSH configuration files, and test 
+kernel-level file immutability (`chattr +i`) to prevent unauthorized tampering.
+
+2. SYSTEM CONTEXT & LOCAL TELEMETRY
+------------------------------------------------------------------------------
+$ whoami && hostname
+hamzaimran
+DESKTOP-31BK2BG
+
+$ ip -br a
+lo               UNKNOWN        127.0.0.1/8 ::1/128
+eth0             UP             172.29.89.97/20 fe80::215:5dff:fea5:a9e7/64
+
+3. COMMAND EXECUTION & VERIFIABLE TERMINAL OUTPUTS
+------------------------------------------------------------------------------
+[Command 1: Inspecting extended attributes on critical system files]
+$ sudo lsattr /etc/passwd /etc/shadow /etc/sudoers /etc/fstab 2>/dev/null
+--- [Output Start] ---
+--------------e------- /etc/passwd
+--------------e------- /etc/shadow
+--------------e------- /etc/sudoers
+--------------e------- /etc/fstab
+--- [Output End] ---
+
+[Command 2: Establishing SHA-256 cryptographic baselines for FIM]
+$ sudo sha256sum /etc/passwd /etc/shadow /etc/sudoers /etc/ssh/sshd_config
+--- [Output Start] ---
+8ca413d995004ed6703e3b28ace3db49add09a9344d6972eff0ea95959c8db1a  /etc/passwd
+077c7d46f34439eac6380221278fe1f851deaa299ea336d2446cfaaf72b4417b  /etc/shadow
+5bac27ce5ff1a78ace8f3ef81bfd60cbd44810ac3f3d280da9d7649fe90c18f8  /etc/sudoers
+f5f0b40412fd9a84b787d967efbcb576728d398e8d40d0d32c825004a04a4999  /etc/ssh/sshd_config
+--- [Output End] ---
+
+[Command 3: Testing kernel-level immutability flag (+i) and tamper enforcement]
+$ touch ~/fim_test.txt && sudo chattr +i ~/fim_test.txt && lsattr ~/fim_test.txt && echo "tamper_test" >> ~/fim_test.txt 2>&1 || true
+--- [Output Start] ---
+----i---------e------- /home/hamzaimran/fim_test.txt
+-bash: /home/hamzaimran/fim_test.txt: Operation not permitted
+--- [Output End] ---
+
+4. ARCHITECTURAL REAL-WORLD APPLICATION & PROBLEM SOLVING
+------------------------------------------------------------------------------
+[Audit Target 1: System Attribute Flags (`lsattr`)]
+* Purpose: Determine if extended filesystem security attributes are active on core configuration paths.
+* Security Risk: Standard Linux permissions (`chmod`) allow root users or processes with root privilege to alter configuration files seamlessly.
+* Practical Action: Output shows `--------------e-------` (extents allocation bit set). No immutable (`i`) or append-only (`a`) flags are set by default.
+
+[Audit Target 2: FIM Cryptographic Baselining (`sha256sum`)]
+* Purpose: Calculate 256-bit hash signatures for `/etc/passwd`, `/etc/shadow`, `/etc/sudoers`, and `/etc/ssh/sshd_config`.
+* Security Risk: Attackers often modify configuration files to add rogue superusers or disable SSH security checks.
+* Practical Action: Stored baseline hashes. Any future automated FIM check comparing current hashes against these strings will immediately flag unauthorized file modifications down to a single byte change.
+
+[Audit Target 3: Immutability Tamper Enforcement (`chattr +i`)]
+* Purpose: Test the kernel-level write-protection lock.
+* Security Risk: Privilege escalation exploits allow attackers to overwrite system binaries or configurations.
+* Practical Action: Verified that applying `chattr +i` sets the `i` attribute flag (`----i---------e-------`) and blocks write attempts with `Operation not permitted`.
+
+5. KEY TECHNICAL LESSONS
+------------------------------------------------------------------------------
+* Extended attributes (`chattr`) operate below standard permission bits (`chmod`), providing an extra layer of kernel enforcement.
+* Setting the `+i` bit on critical files (like `/etc/shadow` or `/etc/sudoers`) stops unauthorized modification attempts, even if an attacker achieves root execution.
+* SHA-256 hash baselining forms the core foundation of automated File Integrity Monitoring (FIM) systems.
+==============================================================================
