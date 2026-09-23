@@ -1,0 +1,86 @@
+==============================================================================
+AUTONOMOUS CYBER DEFENSE - DAILY TECHNICAL LOG
+==============================================================================
+DATE & TIMESTAMP : Wed Sep 23 18:15:00 PKT 2026
+HOSTNAME & USER  : hamzaimran@DESKTOP-31BK2BG
+OS ENVIRONMENT   : Native Ubuntu Linux (WSL2)
+CURRENT PHASE    : Phase 1 (Core Architecture & Infrastructure Hardening)
+DAY & TOPIC      : Day 19 - Centralized Logging, Journald & Log Rotation Architecture
+==============================================================================
+
+1. DAILY OBJECTIVE
+------------------------------------------------------------------------------
+Audit `systemd-journald` disk space consumption (`journalctl --disk-usage`), 
+verify binary journal storage directives (`journald.conf`), audit active 
+`rsyslog` daemon status and configuration rules, and inspect global `logrotate` 
+retention policies (`/etc/logrotate.conf`).
+
+2. SYSTEM CONTEXT & LOCAL TELEMETRY
+------------------------------------------------------------------------------
+$ whoami && hostname
+hamzaimran
+DESKTOP-31BK2BG
+
+$ ip -br a
+lo               UNKNOWN        127.0.0.1/8 ::1/128
+eth0             UP             172.29.89.97/20 fe80::215:5dff:fea5:a9e7/64
+
+3. COMMAND EXECUTION & VERIFIABLE TERMINAL OUTPUTS
+------------------------------------------------------------------------------
+[Command 1: Querying journald disk consumption and journald.conf storage directives]
+$ journalctl --disk-usage ; grep -iE "Storage|SystemMaxUse" /etc/systemd/journald.conf
+--- [Output Start] ---
+Archived and active journals take up 808.7M in the file system.
+#Storage=persistent
+#SystemMaxUse=
+--- [Output End] ---
+
+[Command 2: Inspecting active rsyslog status and core configuration directives]
+$ systemctl is-active rsyslog ; sudo grep -v '^#' /etc/rsyslog.conf | grep -v '^$' | head -n 12
+--- [Output Start] ---
+active
+module(load="imuxsock") # provides support for local system logging
+module(load="imklog" permitnonkernelfacility="on")
+$RepeatedMsgReduction on$FileOwner syslog
+$FileGroup adm$FileCreateMode 0640
+$DirCreateMode 0755$Umask 0022
+$PrivDropToUser syslog$PrivDropToGroup syslog
+$WorkDirectory /var/spool/rsyslog$IncludeConfig /etc/rsyslog.d/*.conf
+--- [Output End] ---
+
+[Command 3: Auditing global log rotation and compression retention policies]
+$ sudo grep -E "weekly|daily|rotate|compress" /etc/logrotate.conf
+--- [Output Start] ---
+# see "man logrotate" for details
+# rotate log files weekly
+weekly
+rotate 4
+# use date as a suffix of the rotated file
+# uncomment this if you want your log files compressed
+#compress
+include /etc/logrotate.d
+--- [Output End] ---
+
+4. ARCHITECTURAL REAL-WORLD APPLICATION & PROBLEM SOLVING
+------------------------------------------------------------------------------
+[Audit Target 1: Journald Memory Footprint & Unset Directives (`808.7M` Consumed)]
+* Purpose: Evaluate binary log retention limits in system memory/disk.
+* Security Risk: Unbounded binary journal growth consumes disk space and can lead to uncoordinated log truncation or system slowdowns.
+* Practical Action: Output shows 808.7MB consumed. Grep output confirms `#Storage=persistent` and `#SystemMaxUse=` are commented out with `#`, proving systemd fallback defaults are handling the log size (capping at 10% of filesystem). Production hardening requires explicitly uncommenting and setting `SystemMaxUse=500M`.
+
+[Audit Target 2: Syslog Stream Ingestion (`rsyslog` Active)]
+* Purpose: Verify that system events are translated from binary journal streams into standard plaintext `/var/log` paths.
+* Security Risk: If `rsyslog` is inactive or misconfigured, security logging falls back strictly to binary journals, preventing standard SIEM or log parsing agents from ingesting `/var/log/auth.log`.
+* Practical Action: Confirmed `rsyslog` is active, socket listener `imuxsock` is loaded, and file creation permissions are restricted (`0640` owned by `syslog:adm`).
+
+[Audit Target 3: Logrotate Retention Policy (`rotate 4`, Uncompressed)]
+* Purpose: Audit historical log archive lifecycle and disk optimization.
+* Security Risk: Uncompressed historical text logs occupy unnecessary storage, while a 4-week retention window (`weekly` + `rotate 4`) may violate longer enterprise compliance requirements (e.g., 90-day retention).
+* Practical Action: Identified that compression is currently commented out (`#compress`). Enabling log compression (`compress`) in `/etc/logrotate.conf` reduces historical log storage by up to 90%.
+
+5. KEY TECHNICAL LESSONS
+------------------------------------------------------------------------------
+* Lines starting with `#` in `systemd` configuration files reflect compiled-in defaults rather than active user overrides.
+* Modern Linux logging uses a two-stage architecture: `journald` captures raw binary events from services/kernel, while `rsyslog` formats and routes them to text files (`/var/log/*`).
+* Binary journal limits are managed by `journald.conf` (`SystemMaxUse`), whereas plaintext file limits are managed independently by `logrotate`.
+==============================================================================
