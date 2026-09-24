@@ -1,0 +1,110 @@
+==============================================================================
+AUTONOMOUS CYBER DEFENSE - DAILY TECHNICAL LOG
+==============================================================================
+DATE & TIMESTAMP : Thu Sep 24 18:32:00 PKT 2026
+HOSTNAME & USER  : hamzaimran@DESKTOP-31BK2BG
+OS ENVIRONMENT   : Native Ubuntu Linux (WSL2)
+CURRENT PHASE    : Phase 1 (Core Architecture & Infrastructure Hardening)
+DAY & TOPIC      : Day 20 - Host Network Firewalls & Packet Filtering
+==============================================================================
+
+1. DAILY OBJECTIVE
+------------------------------------------------------------------------------
+Audit active host firewall status (`ufw`), analyze low-level Netfilter rules and 
+packet counters (`iptables`), and cross-reference open listening network ports 
+(`ss`) against active firewall permissions to spot any security gaps.
+
+2. SYSTEM CONTEXT & LOCAL TELEMETRY
+------------------------------------------------------------------------------
+$ whoami && hostname
+hamzaimran
+DESKTOP-31BK2BG
+
+$ ip -br a
+lo               UNKNOWN        127.0.0.1/8 ::1/128
+eth0             UP             172.29.89.97/20 fe80::215:5dff:fea5:a9e7/64
+
+3. COMMAND EXECUTION & VERIFIABLE TERMINAL OUTPUTS
+------------------------------------------------------------------------------
+[Command 1: Checking UFW status, default policies, and open rules]
+$ sudo ufw status verbose
+--- [Output Start] ---
+Status: active
+Logging: on (low)
+Default: deny (incoming), allow (outgoing), disabled (routed)
+New profiles: skip
+
+To                         Action      From
+--                         ------      ----
+22/tcp                     ALLOW IN    Anywhere
+22/tcp                     ALLOW IN    172.29.80.0/20
+22/tcp (v6)                ALLOW IN    Anywhere (v6)
+--- [Output End] ---
+
+[Command 2: Checking low-level iptables rules and kernel packet counters]
+$ sudo iptables -L -n -v | head -n 15
+--- [Output Start] ---
+Chain INPUT (policy DROP 0 packets, 0 bytes)
+ pkts bytes target     prot opt in     out     source               destination
+   85 21806 ufw-before-logging-input  all  --  *      *       0.0.0.0/0            0.0.0.0/0
+   85 21806 ufw-before-input  all  --  *      *       0.0.0.0/0            0.0.0.0/0
+    4   580 ufw-after-input  all  --  *      *       0.0.0.0/0            0.0.0.0/0
+    4   580 ufw-after-logging-input  all  --  *      *       0.0.0.0/0            0.0.0.0/0
+    4   580 ufw-reject-input  all  --  *      *       0.0.0.0/0            0.0.0.0/0
+    4   580 ufw-track-input  all  --  *      *       0.0.0.0/0            0.0.0.0/0
+
+Chain FORWARD (policy DROP 0 packets, 0 bytes)
+ pkts bytes target     prot opt in     out     source               destination
+    0     0 ufw-before-logging-forward  all  --  *      *       0.0.0.0/0            0.0.0.0/0
+    0     0 ufw-before-forward  all  --  *      *       0.0.0.0/0            0.0.0.0/0
+    0     0 ufw-after-forward  all  --  *      *       0.0.0.0/0            0.0.0.0/0
+    0     0 ufw-after-logging-forward  all  --  *      *       0.0.0.0/0            0.0.0.0/0
+--- [Output End] ---
+
+[Command 3: Checking all active listening network sockets]
+$ sudo ss -tulpn
+--- [Output Start] ---
+Netid  State   Recv-Q  Send-Q     Local Address:Port      Peer Address:Port  Process
+udp    UNCONN  0       0             127.0.0.54:53             0.0.0.0:*      users:(("systemd-resolve",pid=91,fd=18))
+udp    UNCONN  0       0          127.0.0.53%lo:53             0.0.0.0:*      users:(("systemd-resolve",pid=91,fd=16))
+udp    UNCONN  0       0              127.0.0.1:323            0.0.0.0:*      users:(("chronyd",pid=350,fd=4))
+udp    UNCONN  0       0              127.0.0.1:323            0.0.0.0:*
+udp    UNCONN  0       0                  [::1]:323               [::]:*
+udp    UNCONN  0       0                  [::1]:323               [::]:*      users:(("chronyd",pid=350,fd=5))
+tcp    LISTEN  0       4096             0.0.0.0:22             0.0.0.0:*      users:(("systemd",pid=1,fd=76))
+tcp    LISTEN  0       4096          127.0.0.54:53             0.0.0.0:*      users:(("systemd-resolve",pid=91,fd=19))
+tcp    LISTEN  0       4096       127.0.0.53%lo:53             0.0.0.0:*      users:(("systemd-resolve",pid=91,fd=17))
+tcp    LISTEN  0       4096                [::]:22                [::]:*      users:(("systemd",pid=1,fd=77))
+--- [Output End] ---
+
+4. PRACTICAL ANALYSIS & OBSERVATIONS
+------------------------------------------------------------------------------
+* Firewall Stance (UFW): My firewall is active and following a "Default Deny" 
+  rule for incoming traffic. This means any unexpected network request from 
+  the outside gets blocked automatically. Outgoing traffic is allowed so the 
+  system can download updates normally. Port 22 (SSH) is explicitly opened.
+
+* Kernel Packet Filtering (iptables): UFW is actually a simple interface sitting 
+  on top of iptables/Netfilter. Looking at raw iptables shows that the default 
+  INPUT chain policy is set to DROP. Packets hitting the system pass through 
+  UFW's internal chains (`ufw-before-input`, `ufw-track-input`) where connection 
+  tracking decides if a packet is safe or rejected.
+
+* Open Ports vs Firewall Protection (ss): 
+  - `systemd-resolve` (DNS) is listening on port 53, but it is bound strictly to 
+    `127.0.0.53` and `127.0.0.54` (loopback). This means outside devices cannot 
+    touch it.
+  - `chronyd` (NTP time sync) is listening on port 323, also locked to `127.0.0.1`.
+  - SSH (`port 22`) is listening on `0.0.0.0:22` (all network adapters). This 
+    directly matches the UFW rule that explicitly allows port 22 incoming.
+
+5. WHAT I LEARNED TODAY
+------------------------------------------------------------------------------
+* A proper security baseline starts with "Deny All Incoming" and only opens the 
+  exact ports needed for work.
+* Keeping internal services (like DNS and time sync) bound strictly to localhost 
+  (`127.0.0.1`) prevents them from being exposed to the local network in the 
+  first place.
+* UFW provides a easy way to manage rules, but iptables is the engine doing 
+  the real packet filtering inside the Linux kernel.
+==============================================================================
