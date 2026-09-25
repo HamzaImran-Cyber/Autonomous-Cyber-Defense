@@ -51,7 +51,13 @@ A hands-on systems security initiative focused on Linux operating system hardeni
 | **12** | PAM Authentication Auditing | `Phase_1/Day_12/day_12_pam_authentication_auditing.txt` | `[COMPLETED]` |
 | **13** | SSH Security Auditing | `Phase_1/Day_13/day_13_ssh_security_auditing.txt` | `[COMPLETED]` |
 | **14** | Filesystem Mount Auditing | `Phase_1/Day_14/day_14_filesystem_mount_auditing.txt` | `[COMPLETED]` |
-
+| **15** | Service Surface Reduction | `Phase_1/Day_15/day_15_service_surface_reduction.txt` | `[COMPLETE]` |
+| **16** | File Integrity Monitoring | `Phase_1/Day_16/day_16_file_integrity_monitoring.txt` | `[COMPLETED]` |
+| **17** | Kernel Module Auditing | `Phase_1/Day_17/day_17_kernel_module_auditing.txt` | `[COMPLETED]` |
+| **18** | Kernel Telemetry & Auditd | `Phase_1/Day_18/day_18_auditd_kernel_telemetry.txt` | `[COMPLETED]` |
+| **19** | Centralized Logging & Log Rotation | `Phase_1/Day_19/day_19_logging_architecture.txt` | `[COMPLETED]` |
+| **20** | Host Network Firewalls & Packet Filtering | `Phase_1/Day_20/day_20_network_firewalls.txt` | `[COMPLETED]` |
+| **21** | Network Reconnaissance & Service Auditing | `Phase_1/Day_21/day_21_network_reconnaissance.txt` | `[COMPLETED]` |
 ---
 
 ## Repository Directory Structure
@@ -88,6 +94,20 @@ Autonomous Cyber Defense/
 │   │   └── day_13_ssh_security_auditing.txt
 │   └── Day_14/
 │       └── day_14_filesystem_mount_auditing.txt
+│   ├── Day_15
+│   │   └── day_15_service_surface_reduction.txt
+│   ├── Day_16
+│   │   └── day_16_file_integrity_monitoring.txt
+│   ├── Day_17
+│   │   └── day_17_kernel_module_auditing.txt
+│   ├── Day_18
+│   │   └── day_18_auditd_kernel_telemetry.txt
+│   ├── Day_19
+│   │   └── day_19_logging_architecture.txt
+│   ├── Day_20
+│   │   └── day_20_network_firewalls.txt
+│   ├── Day_21
+│   │   └── day_21_network_reconnaissance.txt
 ├── Phase_2/                                  <-- Network Inspection & IDS (Days 31–60)
 ├── Phase_3/                                  <-- Automation & Scripting (Days 61–90)
 └── Phase_4/                                  <-- Autonomous Defense Daemon (Days 91–120)
