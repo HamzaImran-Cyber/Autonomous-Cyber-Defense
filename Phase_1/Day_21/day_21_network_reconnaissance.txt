@@ -1,0 +1,111 @@
+==============================================================================
+AUTONOMOUS CYBER DEFENSE - DAILY TECHNICAL LOG
+==============================================================================
+DATE & TIMESTAMP : Fri Sep 25 18:56:00 PKT 2026
+HOSTNAME & USER  : hamzaimran@DESKTOP-31BK2BG
+OS ENVIRONMENT   : Native Ubuntu Linux (WSL2)
+CURRENT PHASE    : Phase 1 (Core Architecture & Infrastructure Hardening)
+DAY & TOPIC      : Day 21 - Network Reconnaissance & Service Exposure Auditing
+==============================================================================
+
+1. DAILY OBJECTIVE
+------------------------------------------------------------------------------
+Execute active network reconnaissance using Nmap (`nmap`), inspect local TCP/UDP 
+listening sockets, and map active network ports directly to running system 
+processes and binary paths (`lsof`).
+
+2. SYSTEM CONTEXT & LOCAL TELEMETRY
+------------------------------------------------------------------------------
+$ whoami && hostname
+hamzaimran
+DESKTOP-31BK2BG
+
+$ ip -br a
+lo               UNKNOWN        127.0.0.1/8 ::1/128
+eth0             UP             172.29.89.97/20 fe80::215:5dff:fea5:a9e7/64
+
+3. COMMAND EXECUTION & VERIFIABLE TERMINAL OUTPUTS
+------------------------------------------------------------------------------
+[Command 1: Active TCP port scan with service version detection]
+$ nmap -sT -sV -Pn -p 1-1024 120.0.0.1
+--- [Output Start] ---
+Starting Nmap 7.98 ( https://nmap.org ) at 2026-09-25 18:44 +0500
+Nmap scan report for 120.0.0.1
+Host is up (0.011s latency).
+Not shown: 1023 filtered tcp ports (no-response)
+PORT   STATE SERVICE VERSION
+53/tcp open  domain  PowerDNS Recursor 5.4.6
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 13.94 seconds
+--- [Output End] ---
+
+[Command 2: Mapping listening network sockets directly to process IDs and binaries]
+$ sudo lsof -i -P -n | grep LISTEN
+--- [Output Start] ---
+systemd      1           root 76u  IPv4   4433      0t0  TCP *:22 (LISTEN)
+systemd      1           root 77u  IPv6    695      0t0  TCP *:22 (LISTEN)
+systemd-r   89 systemd-resolve 17u  IPv4   1882      0t0  TCP 127.0.0.53:53 (LISTEN)
+systemd-r   89 systemd-resolve 19u  IPv4   1884      0t0  TCP 127.0.0.54:53 (LISTEN)
+--- [Output End] ---
+
+[Command 3: Active UDP scan against top common UDP ports]
+$ sudo nmap -sU --top-ports 20 127.0.0.1
+--- [Output Start] ---
+Starting Nmap 7.98 ( https://nmap.org ) at 2026-09-25 18:56 +0500
+Nmap scan report for localhost (127.0.0.1)
+Host is up (0.000022s latency).
+
+PORT      STATE  SERVICE
+53/udp    closed domain
+67/udp    closed dhcps
+68/udp    closed dhcpc
+69/udp    closed tftp
+123/udp   closed ntp
+135/udp   closed msrpc
+137/udp   closed netbios-ns
+138/udp   closed netbios-dgm
+139/udp   closed netbios-ssn
+161/udp   closed snmp
+162/udp   closed snmptrap
+445/udp   closed microsoft-ds
+500/udp   closed isakmp
+514/udp   closed syslog
+520/udp   closed route
+631/udp   closed ipp
+1434/udp  closed ms-sql-m
+1900/udp  closed upnp
+4500/udp  closed nat-t-ike
+49152/udp closed unknown
+
+Nmap done: 1 IP address (1 host up) scanned in 0.27 seconds
+--- [Output End] ---
+
+4. PRACTICAL ANALYSIS & OBSERVATIONS
+------------------------------------------------------------------------------
+* Process to Socket Mapping (`lsof`): 
+  - `systemd` (PID 1) is bound to port 22 (`*:22`) on both IPv4 and IPv6 using 
+    socket-based activation for OpenSSH.
+  - `systemd-resolve` (PID 89) is managing local DNS queries, listening strictly 
+    on `127.0.0.53:53` and `127.0.0.54:53` (local loopback only).
+
+* Reconnaissance vs Internal Process Audit:
+  - Command 1 targeted `120.0.0.1` (a public routable IP), demonstrating how Nmap 
+    probes an external host through the virtual network stack and identifies 
+    service versions (`PowerDNS Recursor 5.4.6`). Running `nmap -sT -sV -p 1-1024 127.0.0.1` 
+    focuses the scan internally on local interfaces.
+
+* UDP Attack Surface (`nmap -sU`):
+  - The UDP scan returned all top 20 ports as `closed` on `127.0.0.1`. This confirms 
+    there are no unmonitored background UDP daemons exposed on common system ports.
+
+5. WHAT I LEARNED TODAY
+------------------------------------------------------------------------------
+* Active port scanning (`nmap`) tests network accessibility from the outside, 
+  while process auditing (`lsof`) reveals exactly which internal binary owns 
+  each open socket.
+* Service version detection (`-sV`) is essential for vulnerability management 
+  because it exposes exact software versions to potential attackers.
+* Combining `lsof` with `nmap` provides a complete view of open ports and 
+  running services.
+==============================================================================
