@@ -1,0 +1,107 @@
+==============================================================================
+AUTONOMOUS CYBER DEFENSE - DAILY TECHNICAL LOG
+==============================================================================
+DATE & TIMESTAMP : Sat Sep 26 18:58:23 PKT 2026
+HOSTNAME & USER  : hamzaimran@DESKTOP-31BK2BG
+OS ENVIRONMENT   : Native Ubuntu Linux (WSL2)
+CURRENT PHASE    : Phase 1 (Core Architecture & Infrastructure Hardening)
+DAY & TOPIC      : Day 22 - Network Traffic Capture & PCAP Inspection
+==============================================================================
+
+1. DAILY OBJECTIVE
+------------------------------------------------------------------------------
+Capture raw network traffic using `tcpdump`, construct Berkeley Packet Filters (BPF) 
+to isolate DNS queries and TCP SYN packets, export raw traffic streams to binary 
+PCAP files, and analyze layer-3/layer-4 packet headers.
+
+2. SYSTEM CONTEXT & LOCAL TELEMETRY
+------------------------------------------------------------------------------
+$ whoami && hostname
+hamzaimran
+DESKTOP-31BK2BG
+
+$ ip -br a
+lo               UNKNOWN        127.0.0.1/8 ::1/128
+eth0             UP             172.29.89.97/20 fe80::215:5dff:fea5:a9e7/64
+
+3. COMMAND EXECUTION & VERIFIABLE TERMINAL OUTPUTS
+------------------------------------------------------------------------------
+[Command 1: Listing available network capture interfaces]
+$ sudo tcpdump -D
+--- [Output Start] ---
+1.eth0 [Up, Running, Connected]
+2.any (Pseudo-device that captures on all interfaces) [Up, Running]
+3.lo [Up, Running, Loopback]
+4.bluetooth-monitor (Bluetooth Linux Monitor) [Wireless]
+5.nflog (Linux netfilter log (NFLOG) interface) [none]
+6.nfqueue (Linux netfilter queue (NFQUEUE) interface) [none]
+7.dbus-system (D-Bus system bus) [none]
+8.dbus-session (D-Bus session bus) [none]
+--- [Output End] ---
+
+[Command 2: Capturing live DNS UDP traffic]
+$ sudo tcpdump -i any -c 5 -nn udp port 53
+--- [Output Start] ---
+listening on any, link-type LINUX_SLL2 (Linux cooked v2), snapshot length 262144 bytes
+18:44:00.519580 eth0  Out IP 172.29.89.97.39234 > 172.29.80.1.53: 31542+ [1au] A? google.com. (51)
+18:44:00.547801 eth0  In  IP 172.29.80.1.53 > 172.29.89.97.39234: 31542-$ 1/0/0 A 142.250.187.78 (54)
+2 packets captured
+2 packets received by filter
+0 packets dropped by kernel
+--- [Output End] ---
+
+[Command 3: BPF filtering for TCP SYN packets and exporting to PCAP]
+$ sudo tcpdump -i any -c 5 'tcp[tcpflags] & tcp-syn != 0' -w ~/capture.pcap
+--- [Output Start] ---
+listening on any, link-type LINUX_SLL2 (Linux cooked v2), snapshot length 262144 bytes
+5 packets captured
+12 packets received by filter
+0 packets dropped by kernel
+--- [Output End] ---
+
+[Command 4: Reading and parsing saved PCAP headers with verbose output]
+$ tcpdump -r ~/capture.pcap -nn -v
+--- [Output Start] ---
+reading from file /home/hamzaimran/capture.pcap, link-type LINUX_SLL2 (Linux cooked v2), snapshot length 262144
+Warning: interface names might be incorrect
+18:58:23.384056 lo    In  IP (tos 0x0, ttl 64, id 841, offset 0, flags [DF], proto TCP (6), length 60)
+    127.0.0.1.39988 > 127.0.0.1.80: Flags [S], cksum 0xfe30 (incorrect -> 0x6fb1), seq 3903075585, win 65495, options [mss 65495,sackOK,TS val 2557250999 ecr 0,nop,wscale 9], length 0
+18:58:23.384335 lo    In  IP (tos 0x0, ttl 64, id 28805, offset 0, flags [DF], proto TCP (6), length 60)
+    127.0.0.1.51968 > 127.0.0.1.443: Flags [S], cksum 0xfe30 (incorrect -> 0xc45d), seq 3515204462, win 65495, options [mss 65495,sackOK,TS val 1743372808 ecr 0,nop,wscale 9], length 0
+18:58:23.384627 lo    In  IP (tos 0x0, ttl 64, id 33272, offset 0, flags [DF], proto TCP (6), length 60)
+    127.0.0.1.40004 > 127.0.0.1.80: Flags [S], cksum 0xfe30 (incorrect -> 0xb92f), seq 27980169, win 65495, options [mss 65495,sackOK,TS val 1355527740 ecr 0,nop,wscale 9], length 0
+18:58:23.384846 lo    In  IP (tos 0x0, ttl 64, id 47045, offset 0, flags [DF], proto TCP (6), length 60)
+    127.0.0.1.57676 > 127.0.0.1.53: Flags [S], cksum 0xfe30 (incorrect -> 0xd2a8), seq 1134191544, win 65495, options [mss 65495,sackOK,TS val 636669584 ecr 0,nop,wscale 9], length 0
+18:58:23.385055 lo    In  IP (tos 0x0, ttl 64, id 5653, offset 0, flags [DF], proto TCP (6), length 60)
+    127.0.0.1.50668 > 127.0.0.1.22: Flags [S], cksum 0xfe30 (incorrect -> 0xb08a), seq 2694501647, win 65495, options [mss 65495,sackOK,TS val 2944119884 ecr 0,nop,wscale 9], length 0
+--- [Output End] ---
+
+4. PRACTICAL ANALYSIS & OBSERVATIONS
+------------------------------------------------------------------------------
+* DNS Query Flow (Command 2):
+  - Captured an outbound DNS query (`A? google.com.`) sent from source port `39234` 
+    to WSL gateway resolver `172.29.80.1:53`. Received response mapping `google.com` 
+    to IP `142.250.187.78`.
+
+* TCP SYN Isolation & PCAP Inspection (Commands 3 & 4):
+  - The BPF expression `'tcp[tcpflags] & tcp-syn != 0'` successfully filtered out 
+    all background noise, writing only TCP connection initiation packets (`Flags [S]`) 
+    targeting local ports 80, 443, 53, and 22 on `127.0.0.1`.
+  - Parsed TCP header flags: Time To Live (TTL=64), Don't Fragment flag (`[DF]`), 
+    TCP Window Size (65495), and Maximum Segment Size (MSS 65495).
+
+* TCP Checksum Offloading Behavior:
+  - The warning `cksum 0xfe30 (incorrect -> ...)` occurs because Linux delegates 
+    TCP/IP checksum calculation to the virtual network adapter driver (hardware 
+    TX checksum offloading). `tcpdump` captures the frame at the kernel level 
+    before the virtual NIC driver calculates the final checksum value.
+
+5. WHAT I LEARNED TODAY
+------------------------------------------------------------------------------
+* Berkeley Packet Filters (BPF) operate directly in Linux kernel space, allowing 
+  high-performance packet filtering before saving to disk.
+* Binary PCAP files preserve full Layer 3 and Layer 4 header payloads for offline 
+  forensic analysis.
+* TCP SYN packets (`Flags [S]`) mark connection setup attempts and serve as primary 
+  signatures for port scans and network probes.
+==============================================================================
