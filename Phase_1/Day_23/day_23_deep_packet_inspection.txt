@@ -1,0 +1,118 @@
+==============================================================================
+AUTONOMOUS CYBER DEFENSE - DAILY TECHNICAL LOG
+==============================================================================
+DATE & TIMESTAMP : Sun Sep 27 18:58:01 PKT 2026
+HOSTNAME & USER  : hamzaimran@DESKTOP-31BK2BG
+OS ENVIRONMENT   : Native Ubuntu Linux (WSL2)
+CURRENT PHASE    : Phase 1 (Core Architecture & Infrastructure Hardening)
+DAY & TOPIC      : Day 23 - Deep Packet Inspection & Protocol Payload Parsing
+==============================================================================
+
+1. DAILY OBJECTIVE
+------------------------------------------------------------------------------
+Perform Deep Packet Inspection (DPI) and application-layer payload parsing using 
+`tshark` and `tcpdump`. Extract Layer 7 protocol fields (DNS domain queries, HTTP 
+strings) directly from live streams and PCAP captures in ASCII, Hexadecimal, and 
+structured field formats.
+
+2. SYSTEM CONTEXT & LOCAL TELEMETRY
+------------------------------------------------------------------------------
+$ whoami && hostname
+hamzaimran
+DESKTOP-31BK2BG
+
+$ ip -br a
+lo               UNKNOWN        127.0.0.1/8 ::1/128
+eth0             UP             172.29.89.97/20 fe80::215:5dff:fea5:a9e7/64
+
+3. COMMAND EXECUTION & VERIFIABLE TERMINAL OUTPUTS
+------------------------------------------------------------------------------
+[Command 1: Extracting specific L3/L4 fields from PCAP with tshark]
+$ tshark -r ~/capture.pcap -T fields -e frame.number -e ip.src -e ip.dst -e tcp.dstport -e tcp.flags.str
+--- [Output Start] ---
+1       127.0.0.1       127.0.0.1       80      ··········S·
+2       127.0.0.1       127.0.0.1       443     ··········S·
+3       127.0.0.1       127.0.0.1       80      ··········S·
+4       127.0.0.1       127.0.0.1       53      ··········S·
+5       127.0.0.1       127.0.0.1       22      ··········S·
+--- [Output End] ---
+
+[Command 2: Capturing live DNS UDP traffic in ASCII format (-A)]
+$ sudo tcpdump -i any -c 3 -nn -A udp port 53
+--- [Output Start] ---
+listening on any, link-type LINUX_SLL2 (Linux cooked v2), snapshot length 262144 bytes
+18:56:16.429088 eth0  Out IP 172.29.89.97.51489 > 172.29.80.1.53: 37105+ A? neverssl.com. (30)
+E..:.h@.@.....Ya..P..!.5.&...............neverssl.com.....
+18:56:16.429098 eth0  Out IP 172.29.89.97.51489 > 172.29.80.1.53: 39671+ AAAA? neverssl.com. (30)
+E..:.i@.@.....Ya..P..!.5.&...............neverssl.com.....
+18:56:16.726653 eth0  In  IP 172.29.80.1.53 > 172.29.89.97.51489: 37105- 1/0/0 A 34.223.124.45 (58)
+E..Vu.........P...Ya.5.!.B|..............neverssl.com......neverssl.com...........".|-
+3 packets captured
+3 packets received by filter
+0 packets dropped by kernel
+--- [Output End] ---
+
+[Command 3: Live Hexadecimal and ASCII payload dumping (-X)]
+$ sudo tcpdump -i any -c 3 -nn -X udp port 53
+--- [Output Start] ---
+listening on any, link-type LINUX_SLL2 (Linux cooked v2), snapshot length 262144 bytes
+18:58:01.616881 eth0  Out IP 172.29.89.97.37982 > 172.29.80.1.53: 175+ A? neverssl.com. (30)
+        0x0000:  4500 003a 6142 4000 4011 d7d3 ac1d 5961  E..:aB@.@.....Ya
+        0x0010:  ac1d 5001 945e 0035 0026 01d5 00af 0100  ..P..^.5.&......
+        0x0020:  0001 0000 0000 0000 086e 6576 6572 7373  .........neverss
+        0x0030:  6c03 636f 6d00 0001 0001                 l.com.....
+18:58:01.616959 eth0  Out IP 172.29.89.97.37982 > 172.29.80.1.53: 55248+ AAAA? neverssl.com. (30)
+        0x0000:  4500 003a 6143 4000 4011 d7d2 ac1d 5961  E..:aC@.@.....Ya
+        0x0010:  ac1d 5001 945e 0035 0026 01d5 d7d0 0100  ..P..^.5.&......
+        0x0020:  0001 0000 0000 0000 086e 6576 6572 7373  .........neverss
+        0x0030:  6c03 636f 6d00 001c 0001                 l.com.....
+18:58:01.927594 eth0  In  IP 172.29.80.1.53 > 172.29.89.97.37982: 175- 1/0/0 A 34.223.124.45 (58)
+        0x0000:  4500 0056 75df 0000 8011 c31a ac1d 5001  E..Vu.........P.
+        0x0010:  ac1d 5961 0035 945e 0042 41f8 00af 8100  ..Ya.5.^.BA.....
+        0x0020:  0001 0001 0000 0000 086e 6576 6572 7373  .........neverss
+        0x0030:  6c03 636f 6d00 0001 0001 086e 6576 6572  l.com......never
+        0x0040:  7373 6c03 636f 6d00 0001 0001 0000 0000  ssl.com.........
+        0x0050:  0004 22df 7c2d                            ..".|-
+3 packets captured
+3 packets received by filter
+0 packets dropped by kernel
+--- [Output End] ---
+
+[Command 4: Live field extraction using tshark display filters]
+$ sudo tshark -i any -c 3 -Y "dns.flags.response == 0" -T fields -e ip.src -e dns.qry.name
+--- [Output Start] ---
+Running as user "root" and group "root". This could be dangerous.
+Capturing on 'any'
+tshark: Promiscuous mode not supported on the "any" device.
+172.29.89.97    neverssl.com
+172.29.89.97    neverssl.com
+2 packets captured
+--- [Output End] ---
+
+4. PRACTICAL ANALYSIS & OBSERVATIONS
+------------------------------------------------------------------------------
+* Offline Field Extraction (Command 1):
+  - Using `tshark -T fields -e`, extracted raw IP source, destination, port, and 
+    TCP flag strings (`··········S·`) without loading full packet hex bytes into 
+    memory. Confirmed 5 SYN connection requests targeting internal sockets.
+
+* Layer 7 ASCII & Hex Payload Inspection (Commands 2 & 3):
+  - In plain ASCII (`-A`), captured the exact DNS query payload for domain `neverssl.com` 
+    and observed the inbound resolution response mapping it to IPv4 address `34.223.124.45`.
+  - In Hex + ASCII (`-X`), inspected the raw byte offsets (e.g., `0x0020:` showing 
+    hex bytes `6e 65 76 65 72 73 73 6c` corresponding directly to ASCII `neverssl`).
+
+* Real-Time Protocol Field Filtering (Command 4):
+  - Applied the Wireshark display filter `-Y "dns.flags.response == 0"` to isolate 
+    outbound queries from inbound answers, extracting solely the client IP (`172.29.89.97`) 
+    and target hostname (`neverssl.com`).
+
+5. WHAT I LEARNED TODAY
+------------------------------------------------------------------------------
+* Deep Packet Inspection (DPI) reveals cleartext Application-Layer (L7) payloads 
+  that standard Layer 3/4 header analysis misses.
+* `tshark` enables programmatic, CLI-driven Wireshark dissection, allowing automated 
+  SOC telemetry parsing without a Graphical User Interface (GUI).
+* Display filters (`-Y`) operate post-capture on dissected fields, whereas capture 
+  filters (`-f` / BPF) operate inside kernel space prior to byte processing.
+==============================================================================
