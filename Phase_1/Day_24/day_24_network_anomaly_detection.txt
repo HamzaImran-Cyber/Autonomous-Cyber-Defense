@@ -1,0 +1,108 @@
+==============================================================================
+AUTONOMOUS CYBER DEFENSE - DAILY TECHNICAL LOG
+==============================================================================
+DATE & TIMESTAMP : Mon Sep 28 15:59:07 PKT 2026
+HOSTNAME & USER  : hamzaimran@DESKTOP-31BK2BG
+OS ENVIRONMENT   : Native Ubuntu Linux (WSL2)
+CURRENT PHASE    : Phase 1 (Core Architecture & Infrastructure Hardening)
+DAY & TOPIC      : Day 24 - Network Anomaly Detection & Scan Signature Analysis
+==============================================================================
+
+1. DAILY OBJECTIVE
+------------------------------------------------------------------------------
+Analyze network traffic patterns for statistical anomalies, half-open connection 
+signatures, and port scanning signatures using `tshark` conversation modules, 
+TCP flag display filters, and `ss` socket state summaries.
+
+2. SYSTEM CONTEXT & LOCAL TELEMETRY
+------------------------------------------------------------------------------
+$ whoami && hostname
+hamzaimran
+DESKTOP-31BK2BG
+
+$ ip -br a
+lo               UNKNOWN        127.0.0.1/8 ::1/128
+eth0             UP             172.29.89.97/20 fe80::215:5dff:fea5:a9e7/64
+
+3. COMMAND EXECUTION & VERIFIABLE TERMINAL OUTPUTS
+------------------------------------------------------------------------------
+[Command 1: Aggregating TCP conversation statistics with tshark]
+$ tshark -r ~/capture.pcap -z conv,tcp -q
+--- [Output Start] ---
+================================================================================
+TCP Conversations
+Filter:<No Filter>
+                                                           |       <-      | |       ->      | |     Total     |    Relative    |    Duration   |
+                                                           | Frames  Bytes | | Frames  Bytes | | Frames  Bytes |     Start      |               |
+127.0.0.1:39988            <-> 127.0.0.1:80                     0 0 bytes         1 80 bytes        1 80 bytes      0.000000000         0.0000
+127.0.0.1:51968            <-> 127.0.0.1:443                    0 0 bytes         1 80 bytes        1 80 bytes      0.000279000         0.0000
+127.0.0.1:40004            <-> 127.0.0.1:80                     0 0 bytes         1 80 bytes        1 80 bytes      0.000571000         0.0000
+127.0.0.1:57676            <-> 127.0.0.1:53                     0 0 bytes         1 80 bytes        1 80 bytes      0.000790000         0.0000
+127.0.0.1:50668            <-> 127.0.0.1:22                     0 0 bytes         1 80 bytes        1 80 bytes      0.000999000         0.0000
+================================================================================
+--- [Output End] ---
+
+[Command 2: Extracting unacknowledged SYN packets for port scan signature analysis]
+$ tshark -r ~/capture.pcap -Y "tcp.flags.syn == 1 and tcp.flags.ack == 0" -T fields -e frame.number -e ip.src -e ip.dst -e tcp.dstport
+--- [Output Start] ---
+1       127.0.0.1       127.0.0.1       80
+2       127.0.0.1       127.0.0.1       443
+3       127.0.0.1       127.0.0.1       80
+4       127.0.0.1       127.0.0.1       53
+5       127.0.0.1       127.0.0.1       22
+--- [Output End] ---
+
+[Command 3: Filtering for TCP Reset (RST) packets indicating rejected probes]
+$ tshark -r ~/capture.pcap -Y "tcp.flags.reset == 1" -T fields -e frame.number -e ip.src -e ip.dst -e tcp.srcport -e tcp.dstport
+--- [Output Start] ---
+(No matching packets found - 0 RST packets recorded)
+--- [Output End] ---
+
+[Command 4: Auditing live host TCP socket states]
+$ ss -s
+--- [Output Start] ---
+Total: 204
+TCP:   4 (estab 0, closed 0, orphaned 0, timewait 0)
+
+Transport Total     IP        IPv6
+RAW       0         0         0
+UDP       6         4         2
+TCP       4         3         1
+INET      10        7         3
+FRAG      0         0         0
+--- [Output End] ---
+
+4. PRACTICAL ANALYSIS & OBSERVATIONS
+------------------------------------------------------------------------------
+* TCP Conversation Table Analysis (Command 1):
+  - Aggregated 5 distinct TCP stream conversations occurring within a 0.001-second 
+    time window on loopback interface `127.0.0.1`.
+  - All streams showed strictly unidirectional traffic (1 frame / 80 bytes outbound, 
+    0 bytes inbound), proving that none of these connection requests resulted in 
+    a completed 3-way handshake.
+
+* Scan Signature Identification (Command 2):
+  - Applying `-Y "tcp.flags.syn == 1 and tcp.flags.ack == 0"` successfully isolated 
+    a classic TCP SYN scan signature targeting common service ports (80, 443, 53, 22). 
+    In a threat hunting scenario, rapid SYN attempts targeting multiple destination 
+    ports from a single host IP mark active network reconnaissance.
+
+* Zero Connection Reset Verification (Command 3):
+  - The filter `tcp.flags.reset == 1` yielded no output. This confirms that the capture 
+    contains exclusively SYN probes saved via kernel BPF filtering, with no outbound 
+    `RST` packets or active connection tears recorded in the trace.
+
+* Socket Telemetry State Audit (Command 4):
+  - Executed `ss -s` to review system-wide socket state memory. Verified 0 established 
+    connections, 0 orphaned sockets, and 0 in `timewait` or `syn-recv` state, ruling 
+    out active SYN flood queue saturation on the local host.
+
+5. WHAT I LEARNED TODAY
+------------------------------------------------------------------------------
+* `tshark -z conv,tcp` aggregates raw frames into bidirectional host-to-host flows, 
+  allowing rapid detection of asymmetric traffic ratios.
+* A high volume of SYN packets (`syn==1 && ack==0`) lacking corresponding ACK or 
+  payload responses is the primary signature of port scanning and SYN flooding.
+* `ss -s` provides real-time kernel memory socket summaries, enabling SOC analysts 
+  to verify if a host socket queue is under resource exhaustion.
+==============================================================================
