@@ -1,0 +1,86 @@
+==============================================================================
+AUTONOMOUS CYBER DEFENSE - DAILY TECHNICAL LOG
+==============================================================================
+DATE & TIMESTAMP : Tue Sep 29 17:06:41 PKT 2026
+HOSTNAME & USER  : hamzaimran@DESKTOP-31BK2BG
+OS ENVIRONMENT   : Native Ubuntu Linux (WSL2)
+CURRENT PHASE    : Phase 1 (Core Architecture & Infrastructure Hardening)
+DAY & TOPIC      : Day 25 - Network Traffic Baselining & Automated SOC Parsing
+==============================================================================
+
+1. DAILY OBJECTIVE
+------------------------------------------------------------------------------
+Build automated CLI text pipelines using `tshark`, `awk`, `sort`, and `uniq` to 
+baseline network traffic, calculate destination host frequencies, and export 
+structured CSV telemetry logs for SOC analysis.
+
+2. SYSTEM CONTEXT & LOCAL TELEMETRY
+------------------------------------------------------------------------------
+$ whoami && hostname
+hamzaimran
+DESKTOP-31BK2BG
+
+$ ip -br a
+lo               UNKNOWN        127.0.0.1/8 ::1/128
+eth0             UP             172.29.89.97/20 fe80::215:5dff:fea5:a9e7/64
+
+3. COMMAND EXECUTION & VERIFIABLE TERMINAL OUTPUTS
+------------------------------------------------------------------------------
+[Command 1: Extracting and ranking destination IP frequencies]
+$ tshark -r ~/capture.pcap -T fields -e ip.dst | awk NF | sort | uniq -c | sort -nr
+--- [Output Start] ---
+      5 127.0.0.1
+--- [Output End] ---
+
+[Command 2: Ranking DNS query domain name frequencies]
+$ tshark -r ~/capture.pcap -T fields -e dns.qry.name | awk NF | sort | uniq -c | sort -nr
+--- [Output Start] ---
+(No output returned)
+--- [Output End] ---
+
+[Command 3: Exporting PCAP telemetry to structured CSV with headers]
+$ tshark -r ~/capture.pcap -T fields -E header=y -E separator=, -E quote=d -e frame.number -e ip.src -e ip.dst -e _ws.col.Protocol -e _ws.col.Info > ~/network_telemetry.csv
+--- [Output Start] ---
+(Successfully wrote telemetry data to ~/network_telemetry.csv)
+--- [Output End] ---
+
+[Command 4: Verifying the exported CSV telemetry structure]
+$ head -n 10 ~/network_telemetry.csv
+--- [Output Start] ---
+frame.number,ip.src,ip.dst,_ws.col.protocol,_ws.col.info
+"1","127.0.0.1","127.0.0.1","TCP","39988 → 80 [SYN] Seq=0 Win=65495 Len=0 MSS=65495 SACK_PERM TSval=2557250999 TSecr=0 WS=512"
+"2","127.0.0.1","127.0.0.1","TCP","51968 → 443 [SYN] Seq=0 Win=65495 Len=0 MSS=65495 SACK_PERM TSval=1743372808 TSecr=0 WS=512"
+"3","127.0.0.1","127.0.0.1","TCP","40004 → 80 [SYN] Seq=0 Win=65495 Len=0 MSS=65495 SACK_PERM TSval=1355527740 TSecr=0 WS=512"
+"4","127.0.0.1","127.0.0.1","TCP","57676 → 53 [SYN] Seq=0 Win=65495 Len=0 MSS=65495 SACK_PERM TSval=636669584 TSecr=0 WS=512"
+"5","127.0.0.1","127.0.0.1","TCP","50668 → 22 [SYN] Seq=0 Win=65495 Len=0 MSS=65495 SACK_PERM TSval=2944119884 TSecr=0 WS=512"
+--- [Output End] ---
+
+4. PRACTICAL ANALYSIS & OBSERVATIONS
+------------------------------------------------------------------------------
+* Destination IP Frequency Analysis:
+  - Running `awk NF | sort | uniq -c | sort -nr` grouped and counted all destination 
+    IPs. The count of `5` for `127.0.0.1` confirms that every packet in this capture 
+    stayed entirely within the local loopback interface.
+
+* DNS Field Extraction Behavior:
+  - The second command gave no output because `capture.pcap` was saved during Day 22 
+    using a strict TCP SYN filter. Since these packets are pure Layer 4 SYN handshakes 
+    with no Layer 7 DNS payloads, `tshark` found no `dns.qry.name` values, and `awk NF` 
+    stripped the empty lines.
+
+* CSV Export Structure:
+  - Exporting with `-E header=y -E separator=, -E quote=d` formatted the packet 
+    metadata into a clean, double-quoted CSV dataset.
+  - Including `_ws.col.Protocol` and `_ws.col.Info` pulled in high-value connection 
+    details directly from Wireshark's display engine, capturing source/destination 
+    ports, sequence numbers, window sizes, and TCP options (MSS, SACK, TSval, WS).
+
+5. KEY TAKEAWAYS
+------------------------------------------------------------------------------
+* Combining `tshark -T fields` with standard Linux text tools (`sort`, `uniq -c`) 
+  makes it easy to build quick frequency tables for traffic baselines.
+* Using double-quoted CSV exports prevents formatting breaks when packet summary 
+  strings contain commas or special characters.
+* Knowing how packet captures were filtered up front saves time when reviewing empty 
+  field extractions during an investigation.
+==============================================================================
