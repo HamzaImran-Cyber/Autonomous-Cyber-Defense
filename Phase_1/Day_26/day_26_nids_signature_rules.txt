@@ -1,0 +1,85 @@
+==============================================================================
+AUTONOMOUS CYBER DEFENSE - DAILY TECHNICAL LOG
+==============================================================================
+DATE & TIMESTAMP : Wed Sep 30 19:22:16 PKT 2026
+HOSTNAME & USER  : hamzaimran@DESKTOP-31BK2BG
+OS ENVIRONMENT   : Native Ubuntu Linux (WSL2)
+CURRENT PHASE    : Phase 1 (Core Architecture & Infrastructure Hardening)
+DAY & TOPIC      : Day 26 - Network Intrusion Detection Systems & Custom Rules
+==============================================================================
+
+1. DAILY OBJECTIVE
+------------------------------------------------------------------------------
+Author custom Network Intrusion Detection System (NIDS) signature rules using 
+standard Snort syntax, build a CLI-based pattern matching script with `tshark` 
+and `awk`, and automatically detect network probes and suspicious traffic in PCAPs.
+
+2. SYSTEM CONTEXT & LOCAL TELEMETRY
+------------------------------------------------------------------------------
+$ whoami && hostname
+hamzaimran
+DESKTOP-31BK2BG
+
+$ ip -br a
+lo               UNKNOWN        127.0.0.1/8 ::1/128
+eth0             UP             172.29.89.97/20 fe80::215:5dff:fea5:a9e7/64
+
+3. COMMAND EXECUTION & VERIFIABLE TERMINAL OUTPUTS
+------------------------------------------------------------------------------
+[Command 1 & 2: Writing and verifying custom NIDS signature rules]
+$ cat << 'EOF' > ~/local.rules
+alert tcp any any -> any 22 (msg:"NIDS ALERT: SSH Port Scan Probe Detected"; flags:S; sid:1000001; rev:1;)
+alert tcp any any -> any 80 (msg:"NIDS ALERT: HTTP Port Probe Detected"; flags:S; sid:1000002; rev:1;)
+alert tcp any any -> any 80 (msg:"NIDS ALERT: Unencrypted Basic Auth Header"; content:"Authorization: Basic"; sid:1000003; rev:1;)
+EOF
+
+$ cat ~/local.rules
+--- [Output Start] ---
+alert tcp any any -> any 22 (msg:"NIDS ALERT: SSH Port Scan Probe Detected"; flags:S; sid:1000001; rev:1;)
+alert tcp any any -> any 80 (msg:"NIDS ALERT: HTTP Port Probe Detected"; flags:S; sid:1000002; rev:1;)
+alert tcp any any -> any 80 (msg:"NIDS ALERT: Unencrypted Basic Auth Header"; content:"Authorization: Basic"; sid:1000003; rev:1;)
+--- [Output End] ---
+
+[Command 3 & 4: Executing the tshark NIDS engine and reading generated alert logs]
+$ tshark -r ~/capture.pcap -Y "tcp.flags.syn == 1 and tcp.flags.ack == 0" -T fields -e frame.number -e ip.src -e ip.dst -e tcp.dstport | awk '{print "[ALERT] SID:100000"NR" - Potential TCP Port Probe from "$2" to "$3" on Port "$4}' | tee ~/nids_alerts.log
+
+$ cat ~/nids_alerts.log
+--- [Output Start] ---
+[ALERT] SID:1000001 - Potential TCP Port Probe from 127.0.0.1 to 127.0.0.1 on Port 80
+[ALERT] SID:1000002 - Potential TCP Port Probe from 127.0.0.1 to 127.0.0.1 on Port 443
+[ALERT] SID:1000003 - Potential TCP Port Probe from 127.0.0.1 to 127.0.0.1 on Port 80
+[ALERT] SID:1000004 - Potential TCP Port Probe from 127.0.0.1 to 127.0.0.1 on Port 53
+[ALERT] SID:1000005 - Potential TCP Port Probe from 127.0.0.1 to 127.0.0.1 on Port 22
+--- [Output End] ---
+
+4. PRACTICAL ANALYSIS & OBSERVATIONS
+------------------------------------------------------------------------------
+* Rule Syntax Dissection:
+  - The custom rule file defined signatures matching Snort/Suricata formatting. 
+  - Each rule specifies the action (`alert`), protocol (`tcp`), direction (`->`), 
+    source (`any any`), target (`any 22` / `any 80`), alert string (`msg:`), control 
+    flags (`flags:S`), payload string (`content:`), and a unique Signature ID 
+    (`sid:1000001+` reserved for local rules).
+
+* Custom NIDS Pipeline Execution:
+  - The combination of `tshark` field extraction and `awk` string manipulation 
+    functioned as a lightweight CLI detection engine.
+  - The pipeline evaluated the 5 TCP connection requests in `capture.pcap`, matched 
+    unacknowledged SYN attempts (`tcp.flags.syn == 1 and tcp.flags.ack == 0`), and 
+    automatically generated formatted alerts with unique SID tags.
+
+* Threat Hunting Correlation:
+  - The alert output mapped exact probes from source `127.0.0.1` targeting local 
+    ports 80 (HTTP), 443 (HTTPS), 53 (DNS), and 22 (SSH).
+  - In a enterprise SIEM pipeline, these generated logs are ingested to automatically 
+    trigger firewall block rules or isolate offending host IPs.
+
+5. KEY TAKEAWAYS
+------------------------------------------------------------------------------
+* NIDS engines rely on clear signature definitions combining protocol headers, 
+  TCP flags, and payload byte matching (`content:`).
+* Command-line utilities (`tshark` + `awk`) can mirror enterprise NIDS logic 
+  for fast, headless PCAP triage without requiring heavy GUI engines.
+* Structuring alert outputs with distinct SIDs and standardized field order makes 
+  downstream SIEM parsing and rule attribution straightforward.
+==============================================================================

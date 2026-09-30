@@ -1,0 +1,5 @@
+[ALERT] SID:1000001 - Potential TCP Port Probe from 127.0.0.1 to 127.0.0.1 on Port 80
+[ALERT] SID:1000002 - Potential TCP Port Probe from 127.0.0.1 to 127.0.0.1 on Port 443
+[ALERT] SID:1000003 - Potential TCP Port Probe from 127.0.0.1 to 127.0.0.1 on Port 80
+[ALERT] SID:1000004 - Potential TCP Port Probe from 127.0.0.1 to 127.0.0.1 on Port 53
+[ALERT] SID:1000005 - Potential TCP Port Probe from 127.0.0.1 to 127.0.0.1 on Port 22
