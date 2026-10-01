@@ -1,0 +1,98 @@
+==============================================================================
+AUTONOMOUS CYBER DEFENSE - DAILY TECHNICAL LOG
+==============================================================================
+DATE & TIMESTAMP : Thu Oct 01 21:04:21 PKT 2026
+HOSTNAME & USER  : hamzaimran@DESKTOP-31BK2BG
+OS ENVIRONMENT   : Native Ubuntu Linux (WSL2)
+CURRENT PHASE    : Phase 1 (Core Architecture & Infrastructure Hardening)
+DAY & TOPIC      : Day 27 - Automated Active Response & Threat Mitigation
+==============================================================================
+
+1. DAILY OBJECTIVE
+------------------------------------------------------------------------------
+Build a Bash active response engine to bridge NIDS detection and host defense, 
+dynamically extract offending source IP addresses from alert logs, and apply 
+automated Linux kernel netfilter (`iptables`) drop rules to isolate threats.
+
+2. SYSTEM CONTEXT & LOCAL TELEMETRY
+------------------------------------------------------------------------------
+$ whoami && hostname
+hamzaimran
+DESKTOP-31BK2BG
+
+$ ip -br a
+lo               UNKNOWN        127.0.0.1/8 ::1/128
+eth0             UP             172.29.89.97/20 fe80::215:5dff:fea5:a9e7/64
+
+3. COMMAND EXECUTION & VERIFIABLE TERMINAL OUTPUTS
+------------------------------------------------------------------------------
+[Command 1 & 2: Creating and executing active_response.sh]
+$ cat << 'EOF' > ~/active_response.sh
+#!/bin/bash
+ALERT_FILE="$HOME/Autonomous Cyber Defense/Phase_1/Day_26/nids_alerts.log"
+
+if [ ! -f "$ALERT_FILE" ]; then
+    ALERT_FILE="$HOME/nids_alerts.log"
+fi
+
+for ip in $(awk '/ALERT/ {print $9}' "$ALERT_FILE" | sort -u); do
+    echo "[ACTION] Blocking Attacker IP: $ip" \vert{} tee -a "$HOME/active_response_blocks.log"
+    sudo iptables -A INPUT -s "$ip" -j DROP
+done
+EOF
+$ chmod +x ~/active_response.sh
+$ ~/active_response.sh
+--- [Output Start] ---
+[ACTION] Blocking Attacker IP: 127.0.0.1
+--- [Output End] ---
+
+[Command 3: Checking the active response audit log]
+$ cat ~/active_response_blocks.log
+--- [Output Start] ---
+[ACTION] Blocking Attacker IP: Probe
+[ACTION] Blocking Attacker IP: 127.0.0.1
+--- [Output End] ---
+
+[Command 4: Auditing kernel IPv4 firewall rules]
+$ sudo iptables -L INPUT -n -v
+--- [Output Start] ---
+Chain INPUT (policy DROP 0 packets, 0 bytes)
+ pkts bytes target     prot opt in     out     source               destination
+  128 53762 ufw-before-logging-input  all  --  *      *        0.0.0.0/0            0.0.0.0/0
+  128 53762 ufw-before-input  all  --  *      *        0.0.0.0/0            0.0.0.0/0
+    0     0 ufw-after-input  all  --  *      *        0.0.0.0/0            0.0.0.0/0
+    0     0 ufw-after-logging-input  all  --  *      *        0.0.0.0/0            0.0.0.0/0
+    0     0 ufw-reject-input  all  --  *      *        0.0.0.0/0            0.0.0.0/0
+    0     0 ufw-track-input  all  --  *      *        0.0.0.0/0            0.0.0.0/0
+    0     0 DROP       all  --  *      *        127.0.0.1            0.0.0.0/0
+--- [Output End] ---
+
+4. PRACTICAL ANALYSIS & OBSERVATIONS
+------------------------------------------------------------------------------
+* Script Logic & Token Isolation:
+  - The script dynamically checks for `nids_alerts.log` in both the organized directory 
+    `Phase_1/Day_26/` and the home folder fallback.
+  - Using `awk '/ALERT/ {print $9}'` targets field 9 of the alert string, isolating 
+    `127.0.0.1`. Piping into `sort -u` deduplicates IP addresses so `iptables` only 
+    processes unique targets.
+
+* Audit Log Trace:
+  - Reading `active_response_blocks.log` records both execution attempts: the first 
+    failed token attempt (`Probe`), followed by the clean execution that successfully 
+    isolated `127.0.0.1`.
+
+* Kernel Netfilter Enforcement:
+  - Running `sudo iptables -L INPUT -n -v` confirms the block rule is live.
+  - The entry `DROP all -- * * 127.0.0.1 0.0.0.0/0` tells the Linux netfilter framework 
+    to discard all inbound IP packets originating from `127.0.0.1` before they reach 
+    any user-space application socket.
+
+5. KEY TAKEAWAYS
+------------------------------------------------------------------------------
+* Combining log parsing with netfilter commands creates a SOAR pipeline that turns 
+  passive detection logs into active protection.
+* Token column verification in `awk` is essential when parsing custom alert formats 
+  to avoid feeding non-IP text strings into firewall utilities.
+* `iptables -L -n -v` provides low-level verification of kernel-level traffic drops 
+  and packet counters.
+==============================================================================
