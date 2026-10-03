@@ -1,0 +1,122 @@
+==============================================================================
+AUTONOMOUS CYBER DEFENSE - DAILY TECHNICAL LOG
+==============================================================================
+DATE & TIMESTAMP : Sat Oct 03 19:54:32 PKT 2026
+HOSTNAME & USER  : hamzaimran@DESKTOP-31BK2BG
+OS ENVIRONMENT   : Native Ubuntu Linux (WSL2)
+CURRENT PHASE    : Phase 1 (Core Architecture & Infrastructure Hardening)
+DAY & TOPIC      : Day 29 - ACD Active Response Daemon & Systemd Service Unit
+==============================================================================
+
+1. DAILY OBJECTIVE
+------------------------------------------------------------------------------
+Convert the active response script into an automated continuous monitoring loop 
+and deploy it as a system-managed background daemon (`acd-response.service`) 
+using Linux `systemd`, ensuring automatic boot enablement and fault recovery.
+
+2. SYSTEM CONTEXT & LOCAL TELEMETRY
+------------------------------------------------------------------------------
+$ whoami && hostname
+hamzaimran
+DESKTOP-31BK2BG
+
+$ ip -br a
+lo               UNKNOWN        127.0.0.1/8 ::1/128
+eth0             UP             172.29.89.97/20 fe80::215:5dff:fea5:a9e7/64
+
+3. COMMAND EXECUTION & VERIFIABLE TERMINAL OUTPUTS
+------------------------------------------------------------------------------
+[Command 1: Updating active_response.sh to continuous event loop]
+$ cat << 'EOF' > "$HOME/Autonomous Cyber Defense/Phase_1/Day_27/active_response.sh"
+#!/bin/bash
+# Autonomous Cyber Defense - Continuous Active Response Daemon
+ALERT_FILE="$HOME/Autonomous Cyber Defense/Phase_1/Day_26/nids_alerts.log"
+BLOCK_LOG="$HOME/Autonomous Cyber Defense/Phase_1/Day_27/active_response_blocks.log"
+
+if [ ! -f "$ALERT_FILE" ]; then
+    ALERT_FILE="$HOME/nids_alerts.log"
+fi
+
+echo "[ACD DAEMON] Engine started at $(date)" >> "$BLOCK_LOG"
+
+while true; do
+    if [ -f "$ALERT_FILE" ]; then
+        for ip in $(awk '/ALERT/ {print $9}' "$ALERT_FILE" 2>/dev/null | sort -u); do
+            if [ -n "$ip" ] && [ "$ip" != "Probe" ]; then
+                if ! sudo iptables -C INPUT -s "$ip" -j DROP 2>/dev/null; then
+                    echo "[DAEMON ACTION] Applying firewall block for IP: $ip at $(date +\%T)" >> "$BLOCK_LOG"
+                    sudo iptables -A INPUT -s "$ip" -j DROP
+                fi
+            fi
+        done
+    fi
+    sleep 5
+done
+EOF
+$ chmod +x "$HOME/Autonomous Cyber Defense/Phase_1/Day_27/active_response.sh"
+
+[Command 2: Creating acd-response.service unit configuration]
+$ sudo tee /etc/systemd/system/acd-response.service > /dev/null << EOF
+[Unit]
+Description=Autonomous Cyber Defense Active Response Daemon
+After=network.target
+
+[Service]
+Type=simple
+User=hamzaimran
+ExecStart=/bin/bash "/home/hamzaimran/Autonomous Cyber Defense/Phase_1/Day_27/active_response.sh"
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+[Command 3 & 4: Activating service unit and verifying daemon execution state]
+$sudo systemctl daemon-reload$ sudo systemctl enable acd-response.service
+--- [Output Start] ---
+Created symlink '/etc/systemd/system/multi-user.target.wants/acd-response.service' → '/etc/systemd/system/acd-response.service'.
+--- [Output End] ---
+
+$ sudo systemctl start acd-response.service
+$ sudo systemctl status acd-response.service --no-pager
+--- [Output Start] ---
+● acd-response.service - Autonomous Cyber Defense Active Response Daemon
+     Loaded: loaded (/etc/systemd/system/acd-response.service; enabled; preset: enabled)
+     Active: active (running) since Sat 2026-10-03 19:54:32 PKT; 25s ago
+ Invocation: 0470377c82e745a697fd5c9cb931f81c
+   Main PID: 1127 (bash)
+      Tasks: 2 (limit: 4618)
+     Memory: 18.3M (peak: 19.3M)
+        CPU: 479ms
+     CGroup: /system.slice/acd-response.service
+             ├─1127 /bin/bash "/home/hamzaimran/Autonomous Cyber Defense/Phase_1/Day_27/active_response.sh"
+             └─1157 sleep 5
+
+Oct 03 19:54:32 DESKTOP-31BK2BG systemd[1]: Started acd-response.service - Autonomous Cyber Defense Active Response Daemon.
+--- [Output End] ---
+
+4. PRACTICAL ANALYSIS & OBSERVATIONS
+------------------------------------------------------------------------------
+* Systemd Service Unit Lifecycle:
+  - Executing `systemctl enable` linked `acd-response.service` to `multi-user.target.wants`, 
+    ensuring auto-start upon OS initialization.
+  - The process runs persistently in the background under PID `1127`, spawning low-overhead 
+    `sleep 5` cycles (PID `1157`).
+
+* Runtime Overhead & Resilience:
+  - Memory consumption is capped at ~18.3 MB, maintaining minimal CPU impact (479 ms total).
+  - `Restart=always` enforces automatic process recovery within 3 seconds if the daemon 
+    is killed or encounters a critical crash.
+  - `iptables -C` checks current netfilter state before applying rules, preventing duplicate 
+    firewall entry bloat.
+
+5. KEY TAKEAWAYS
+------------------------------------------------------------------------------
+* Security automation tools must run as system-managed daemons rather than foreground 
+  terminal commands to maintain 24/7 active response capability.
+* `systemd` handles lifecycle controls, boot-time execution, logging aggregation, and 
+  process self-healing automatically.
+* Idempotent checks inside background loops ensure system state integrity during repeated 
+  monitoring intervals.
+==============================================================================
