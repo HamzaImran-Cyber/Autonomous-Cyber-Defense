@@ -1,0 +1,7 @@
+==========================================
+     ACD BLACKLIST EVALUATION ENGINE      
+==========================================
+Evaluated IP : 192.168.1.50
+Match Status : [FOUND IN BLACKLIST]
+Decision     : TRIGGERING FIREWALL BLOCK
+==========================================
