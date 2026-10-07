@@ -1,0 +1,7 @@
+==========================================
+     ACD AUTOMATED LOG STREAM PARSER      
+==========================================
+Status: [MATCH] | Threat IP: 192.168.1.50 | Line: 2026-10-06 14:32:10 [ALERT] Failed password for root from 192.168.1.50 port 22
+Status: [CLEAN] | Normal IP: 10.0.0.5
+Status: [MATCH] | Threat IP: 10.0.0.99 | Line: 2026-10-06 14:32:15 [ALERT] Failed password for user1 from 10.0.0.99 port 22
+==========================================
