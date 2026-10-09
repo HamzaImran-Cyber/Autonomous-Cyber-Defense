@@ -1,0 +1,11 @@
+Reading telemetry from: sample_auth.log
+=========================================
+Line 1: [ALERT] Blacklisted IP detected -> 192.168.1.50
+Line 2: [INFO] Safe IP -> 10.0.0.5
+Line 3: [ALERT] Blacklisted IP detected -> 10.0.0.99
+Line 4: [WARNING] Malformed log entry detected & skipped!
+=========================================
+Reading telemetry from: non_existent_syslog.log
+=========================================
+[CRITICAL ERROR] Target file 'non_existent_syslog.log' not found on filesystem.
+==========================================
