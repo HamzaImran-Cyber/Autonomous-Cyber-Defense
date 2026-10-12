@@ -1,0 +1,4 @@
+==========================================
+Parsed event: FAILED login for 'root' from 192.168.1.50
+Decision : [ALERT] 192.168.1.50 matched threat blacklist!
+==========================================
