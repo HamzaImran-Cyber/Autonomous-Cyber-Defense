@@ -1,0 +1,5 @@
+==========================================
+JSON Parsed Event : AUTHENTICATION_FAILURE [HIGH]
+Source IP         : 10.0.0.99
+Decision          : [ALERT] 10.0.0.99 is Blacklisted
+==========================================
