@@ -1,0 +1,6 @@
+==========================================
+Loaded 3 events from events.json
+[ALERT] Flagged IP 10.0.0.99 -> Added to alert queue
+[ALERT] Flagged IP 192.168.1.50 -> Added to alert queue
+Successfully generated alerts.json with 2 alerts.
+==========================================

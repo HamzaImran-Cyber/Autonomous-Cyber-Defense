@@ -1,0 +1,16 @@
+[
+    {
+        "timestamp": "2026-10-13T10:05:00Z",
+        "src_ip": "10.0.0.99",
+        "event": "SSH_BRUTEFORCE",
+        "action": "BLOCK",
+        "rule_triggered": "BLACKLIST_MATCH"
+    },
+    {
+        "timestamp": "2026-10-13T10:10:00Z",
+        "src_ip": "192.168.1.50",
+        "event": "PORT_SCAN",
+        "action": "BLOCK",
+        "rule_triggered": "BLACKLIST_MATCH"
+    }
+]

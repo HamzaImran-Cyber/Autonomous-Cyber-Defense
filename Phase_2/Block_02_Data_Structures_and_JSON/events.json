@@ -1,0 +1,5 @@
+[
+  {"timestamp": "2026-10-13T10:00:00Z", "src_ip": "192.168.1.10", "event": "USER_LOGIN"},
+  {"timestamp": "2026-10-13T10:05:00Z", "src_ip": "10.0.0.99", "event": "SSH_BRUTEFORCE"},
+  {"timestamp": "2026-10-13T10:10:00Z", "src_ip": "192.168.1.50", "event": "PORT_SCAN"}
+]
