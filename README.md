@@ -1,99 +1,55 @@
-# Autonomous Cyber Defense (120-Day Engineering Initiative)
+# 🛡️ Autonomous Cyber Defense (ACD)
 
-A hands-on systems security initiative focused on Linux operating system hardening, system call auditing, network threat telemetry, and automated threat mitigation. This repository tracks a daily, open-source engineering progression from low-level host hardening to building an autonomous background defense daemon on Ubuntu Linux (WSL2).
+A hands-on, engineering-focused repository documenting a 120-day journey building production-grade security tools, automated threat responders, SIEM log pipelines, and SOAR daemons from scratch on **Ubuntu Linux (WSL2)** using standard **Bash** and **Python 3**.
 
----
+## 🚀 Mission & Vision
 
-## System Environment & Infrastructure Specs
+Modern Security Operations Centers (SOC) require security engineers who understand telemetry at the code level—moving beyond relying solely on third-party tools to writing resilient, custom automation for log parsing, threat intelligence integration, and real-time active response.
 
-- **Host OS:** Windows 11 / WSL2 Subsystem
-- **Guest OS Environment:** Ubuntu Linux
-- **Kernel Version:** `6.x-microsoft-standard-WSL2`
-- **Primary Shell:** GNU Bash (`/bin/bash`)
-- **Version Control & Logging:** Git, standard structured plain-text daily telemetry logs (`.txt`)
+This repository tracks my progress from low-level Linux defense scripts to modular, fault-tolerant Python security engines.
 
----
+## 📊 Progress Dashboard
 
-## 120-Day Master Roadmap
+| Phase | Focus Area | Status | Progress |
+| ----- | ----- | ----- | ----- |
+| **Phase 1** | Linux Hardening, Networking & Shell Automation | `[COMPLETED]` | 30 / 30 Days |
+| **Phase 2** | Python Security Automation | `[IN PROGRESS]` | 8 / 24 Lessons |
+| **Phase 3** | SIEM, NIDS & Detection Engineering | `[UPCOMING]` | 0 / 16 Lessons |
+| **Phase 4** | Enterprise SOAR & Capstone Portfolio | `[UPCOMING]` | 0 / 16 Lessons |
 
-### Phase 1: OS Hardening, Access Controls & Telemetry (Days 01–30) — *IN PROGRESS*
-- **Week 1 (Telemetry & Network Isolation):** OS architecture baselining, networking fundamentals, IP addressing/subnetting, DNS/traceroute inspection, UFW firewall surface reduction, process/system telemetry, authentication logs, and network socket/port analysis (`ss`, `lsof`).
-- **Week 2 (Kernel, Identity & Mount Security):** `sysctl` kernel parameter tuning, user identity database auditing (`/etc/passwd`, `/etc/shadow`), SUID/SGID permission checks, `cron` scheduled tasks, PAM authentication hardening (`yescrypt`, `faillock.conf`), SSH security auditing (`sshd -T`), and filesystem mount security (`nosuid`, `nodev`, `noexec`).
-- **Week 3 (Service Surface Reduction & File Integrity):** Minimizing background services, file integrity monitoring (FIM), immutable file attribute locks (`chattr +i`), and security baselining.
-- **Week 4 (Audit Framework & Log Infrastructure):** Linux kernel audit subsystem (`auditd`), system call rules, centralized logging, and log rotation policies.
-
-### Phase 2: Network Traffic Inspection & Threat Telemetry (Days 31–60)
-- Deep packet analysis (`tcpdump`, `tshark`), Intrusion Detection System (IDS) deployment using Suricata/Snort, custom signature rule creation, and MITRE ATT&CK event correlation.
-
-### Phase 3: Security Automation & Threat Scripting (Days 61–90)
-- Automated compliance auditing via Bash scripts, high-speed log parsing and string analysis via Python, real-time file monitoring daemons, and Threat Intelligence API integration (VirusTotal, AbuseIPDB).
-
-### Phase 4: Autonomous Defense Daemon & Active Response (Days 91–120)
-- Engineering a lightweight Python background daemon integrated with `systemd`, automated threat mitigation (dynamic IP blocking via UFW/iptables, account isolation), brute-force emulation testing, and final system benchmarking.
-
----
-
-## Phase 1 Execution Index (Days 01–14)
-
-| Day | Security Audit & Telemetry Focus | Log File Path | Status |
-| :---: | :--- | :--- | :---: |
-| **01** | Networking & Linux Basics | `Phase_1/Day_01/day_01_networking_and_linux_basics.txt` | `[COMPLETED]` |
-| **02** | IP Addressing & Subnetting | `Phase_1/Day_02/day_02_ip_addressing_and_subnetting.txt` | `[COMPLETED]` |
-| **03** | DNS & Traceroute Inspection | `Phase_1/Day_03/day_03_dns_and_traceroute.txt` | `[COMPLETED]` |
-| **04** | UFW Firewall & Port Security | `Phase_1/Day_04/day_04_ufw_firewall_and_port_security.txt` | `[COMPLETED]` |
-| **05** | System Telemetry & Process Auditing | `Phase_1/Day_05/day_05_system_telemetry_and_process_auditing.txt` | `[COMPLETED]` |
-| **06** | Authentication Logs & Telemetry | `Phase_1/Day_06/day_06_authentication_logs_and_telemetry.txt` | `[COMPLETED]` |
-| **07** | Network Socket Telemetry | `Phase_1/Day_07/day_07_network_socket_telemetry.txt` | `[COMPLETED]` |
-| **08** | Kernel Parameter Auditing | `Phase_1/Day_08/day_08_kernel_parameter_auditing.txt` | `[COMPLETED]` |
-| **09** | User Identity & Permissions | `Phase_1/Day_09/day_09_user_identity_permissions.txt` | `[COMPLETED]` |
-| **10** | SUID/SGID Permission Auditing | `Phase_1/Day_10/day_10_suid_sgid_permission_auditing.txt` | `[COMPLETED]` |
-| **11** | Cron Scheduled Task Auditing | `Phase_1/Day_11/day_11_cron_scheduled_task_auditing.txt` | `[COMPLETED]` |
-| **12** | PAM Authentication Auditing | `Phase_1/Day_12/day_12_pam_authentication_auditing.txt` | `[COMPLETED]` |
-| **13** | SSH Security Auditing | `Phase_1/Day_13/day_13_ssh_security_auditing.txt` | `[COMPLETED]` |
-| **14** | Filesystem Mount Auditing | `Phase_1/Day_14/day_14_filesystem_mount_auditing.txt` | `[COMPLETED]` |
-| **15** | Service Surface Reduction | `Phase_1/Day_15/day_15_service_surface_reduction.txt` | `[COMPLETE]` |
-| **16** | File Integrity Monitoring | `Phase_1/Day_16/day_16_file_integrity_monitoring.txt` | `[COMPLETED]` |
-| **17** | Kernel Module Auditing | `Phase_1/Day_17/day_17_kernel_module_auditing.txt` | `[COMPLETED]` |
-| **18** | Kernel Telemetry & Auditd | `Phase_1/Day_18/day_18_auditd_kernel_telemetry.txt` | `[COMPLETED]` |
-| **19** | Centralized Logging & Log Rotation | `Phase_1/Day_19/day_19_logging_architecture.txt` | `[COMPLETED]` |
-| **20** | Host Network Firewalls & Packet Filtering | `Phase_1/Day_20/day_20_network_firewalls.txt` | `[COMPLETED]` |
-| **21** | Network Reconnaissance & Service Auditing | `Phase_1/Day_21/day_21_network_reconnaissance.txt` | `[COMPLETED]` |
----
-
-## Repository Directory Structure
+## 📂 Repository Architecture
 
 ```text
-Autonomous Cyber Defense/
-├── README.md
-├── Phase_1/
-│   ├── Day_01/
+.
+├── Phase_1
+│   ├── Day_01
 │   │   └── day_01_networking_and_linux_basics.txt
-│   ├── Day_02/
+│   ├── Day_02
 │   │   └── day_02_ip_addressing_and_subnetting.txt
-│   ├── Day_03/
+│   ├── Day_03
 │   │   └── day_03_dns_and_traceroute.txt
-│   ├── Day_04/
+│   ├── Day_04
 │   │   └── day_04_ufw_firewall_and_port_security.txt
-│   ├── Day_05/
+│   ├── Day_05
 │   │   └── day_05_system_telemetry_and_process_auditing.txt
-│   ├── Day_06/
+│   ├── Day_06
 │   │   └── day_06_authentication_logs_and_telemetry.txt
-│   ├── Day_07/
+│   ├── Day_07
 │   │   └── day_07_network_socket_telemetry.txt
-│   ├── Day_08/
+│   ├── Day_08
 │   │   └── day_08_kernel_parameter_auditing.txt
-│   ├── Day_09/
+│   ├── Day_09
 │   │   └── day_09_user_identity_permissions.txt
-│   ├── Day_10/
+│   ├── Day_10
 │   │   └── day_10_suid_sgid_permission_auditing.txt
-│   ├── Day_11/
+│   ├── Day_11
 │   │   └── day_11_cron_scheduled_task_auditing.txt
-│   ├── Day_12/
+│   ├── Day_12
 │   │   └── day_12_pam_authentication_auditing.txt
-│   ├── Day_13/
+│   ├── Day_13
 │   │   └── day_13_ssh_security_auditing.txt
-│   └── Day_14/
-│       └── day_14_filesystem_mount_auditing.txt
+│   ├── Day_14
+│   │   └── day_14_filesystem_mount_auditing.txt
 │   ├── Day_15
 │   │   └── day_15_service_surface_reduction.txt
 │   ├── Day_16
@@ -108,6 +64,118 @@ Autonomous Cyber Defense/
 │   │   └── day_20_network_firewalls.txt
 │   ├── Day_21
 │   │   └── day_21_network_reconnaissance.txt
-├── Phase_2/                                  <-- Network Inspection & IDS (Days 31–60)
-├── Phase_3/                                  <-- Automation & Scripting (Days 61–90)
-└── Phase_4/                                  <-- Autonomous Defense Daemon (Days 91–120)
+│   ├── Day_22
+│   │   └── day_22_packet_telemetry_tcpdump.txt
+│   ├── Day_23
+│   │   └── day_23_deep_packet_inspection.txt
+│   ├── Day_24
+│   │   └── day_24_network_anomaly_detection.txt
+│   ├── Day_25
+│   │   └── day_25_network_baselining.txt
+│   ├── Day_26
+│   │   ├── day_26_nids_signature_rules.txt
+│   │   ├── local.rules
+│   │   ├── nids_alert.log
+│   │   ├── nids_alerts.log
+│   │   ├── nids_alerts.log.1.gz
+│   │   └── nids_alerts.log.2.gz
+│   ├── Day_27
+│   │   ├── active_response.sh
+│   │   ├── active_response_blocks.log
+│   │   ├── active_response_blocks.log.1.gz
+│   │   ├── active_response_blocks.log.2.gz
+│   │   ├── active_response_blocks.log.3.gz
+│   │   └── day_27_automated_active_response.txt
+│   ├── Day_28
+│   │   └── day_28_firewall_persistence_and_log_rotation.txt
+│   ├── Day_29
+│   │   └── day_29_acd_active_response_daemon.txt
+│   └── Day_30
+│       └── day_30_phase_1_integration_and_milestone_audit.txt
+├── Phase_2
+│   ├── Block_01_Python_Fundamentals
+│   │   ├── 01_variables_and_strings.py
+│   │   ├── 02_ip_blacklist_checker.py
+│   │   ├── 03_file_handling_and_log_loops.py
+│   │   ├── 04_functions_and_exception_handling.py
+│   │   ├── lesson_01_output.txt
+│   │   ├── lesson_02_output.txt
+│   │   ├── lesson_03_output.txt
+│   │   ├── lesson_04_output.txt
+│   │   └── sample_auth.log
+│   ├── Block_02_Data_Structures_and_JSON
+│   │   ├── 01_python_dictionaries.py
+│   │   ├── 02_parsing_json_logs.py
+│   │   ├── 03_json_files_and_structured_logging.py
+│   │   ├── 04_nested_json_parsing.py
+│   │   ├── alerts.json
+│   │   ├── events.json
+│   │   ├── lesson_01_output.txt
+│   │   ├── lesson_02_output.txt
+│   │   ├── lesson_03_output.txt
+│   │   └── lesson_04_output.txt
+│   ├── Block_03_Socket_Programming_and_Auditor
+│   ├── Block_04_Packet_Manipulation_Scapy
+│   ├── Block_05_Threat_Intel_APIs
+│   └── Block_06_Python_SOAR_Daemon
+├── Phase_3
+│   ├── Block_01_Suricata_NIDS_Setup
+│   ├── Block_02_ELK_Stack_SIEM_Ingestion
+│   ├── Block_03_Dashboards_and_Alerting
+│   └── Block_04_Sigma_Rule_Engineering
+├── Phase_4
+│   ├── Block_01_Modular_SOAR_Architecture
+│   ├── Block_02_Docker_Containerization
+│   ├── Block_03_Red_Blue_Attack_Simulations
+│   └── Block_04_Capstone_Documentation_and_Portfolio
+└── README.md
+```
+
+## 💡 Real-World Applications & Professional Capability
+
+The scripts and configurations developed across **Phase 1** and **Phase 2** directly map to everyday SOC Engineering, SecOps, and Security Software tasks:
+
+### 1. Host Hardening & System Auditing (Phase 1)
+* **Skill:** Auditing PAM modules, SSH daemon policies, kernel parameters (`sysctl`), and SUID/SGID permissions.
+* **Real-World Impact:** Enforcing CIS Benchmarks and hardening enterprise Linux servers against privilege escalation and unauthorized access.
+
+### 2. Network Telemetry & Active Response (Phase 1)
+* **Skill:** Writing custom NIDS rules (`local.rules`) and automated active response scripts (`active_response.sh`) triggered by log events.
+* **Real-World Impact:** Automatically isolating attacker IPs at the host firewall level (`iptables`/`ufw`) during active brute-force or port-scan attempts.
+
+### 3. Log Ingestion & SIEM Parsing (Phase 2)
+* **Skill:** Extracting telemetry from both unstructured log files (`sample_auth.log`) and structured JSON outputs (`events.json`, nested EDR logs).
+* **Real-World Impact:** Building custom ingestion pipelines for non-standard or legacy security sensors that lack pre-built SIEM plugins.
+
+### 4. Log Enrichment & Threat Intelligence Matching (Phase 2)
+* **Skill:** Modifying JSON dictionaries in memory to append metadata tags (`"action": "BLOCK"`, `"rule_triggered": "BLACKLIST_MATCH"`).
+* **Real-World Impact:** Automating SOC triage by dynamically enriching raw telemetry against threat intelligence lists before pushing data to security dashboards.
+
+### 5. Fault-Tolerant Daemon Engineering (Phase 2)
+* **Skill:** Wrapping parsing logic into reusable functions (`def`) backed by `try/except` blocks handling `IndexError`, `FileNotFoundError`, and `JSONDecodeError`.
+* **Real-World Impact:** Building 24/7 background security automation services (SOAR daemons) that remain operational when reading corrupted payloads or missing fields.
+
+## 🛠️ Quickstart & Local Verification
+
+To run and verify any lesson script locally on Linux/WSL2:
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/<your-username>/Autonomous-Cyber-Defense.git
+cd "Autonomous-Cyber-Defense"
+
+# 2. Navigate to a target Block (e.g., Phase 2 Block 02)
+cd Phase_2/Block_02_Data_Structures_and_JSON
+
+# 3. Execute a lesson script
+python3 04_nested_json_parsing.py
+```
+
+## 📈 Roadmap Overview
+
+* **Phase 1: Linux System Hardening & Active Defense:** System telemetry, kernel parameters, PAM, SSH security, custom NIDS signatures, automated active response scripts.
+* **Phase 2: Python Security Automation:** Log parsers, key-value lookup engines, socket scanners, network packet manipulation (`Scapy`), threat intel API integration, background SOAR daemons.
+* **Phase 3: Detection Engineering & SIEM:** Suricata NIDS rule creation, ELK stack log ingestion pipelines, custom dashboards, Sigma rules.
+* **Phase 4: Enterprise SOAR & Capstone:** Modular Python engines, Docker containerization, Red vs. Blue attack simulations, capstone portfolio.
+
+*Created and maintained as part of the Autonomous Cyber Defense engineering track.*
