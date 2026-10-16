@@ -1,0 +1,9 @@
+==========================================
+Scanning Host: 127.0.0.1
+==========================================
+[CLOSED] Port 21   
+[OPEN]   Port 22    | Banner: SSH-2.0-OpenSSH_10.2p1 Ubuntu-2ubuntu3.6
+[CLOSED] Port 80   
+[CLOSED] Port 443  
+[CLOSED] Port 8080 
+==========================================
