@@ -1,0 +1,10 @@
+==========================================
+Starting Network Audit: 127.0.0.1
+[CLOSED] Port 21
+[OPEN] Port 22
+[CLOSED] Port 80
+[CLOSED] Port 443
+[CLOSED] Port 8080
+==========================================
+Audit complete! Generated audit_report.json with 1 open findings.
+==========================================

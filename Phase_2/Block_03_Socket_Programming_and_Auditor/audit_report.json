@@ -1,0 +1,8 @@
+[
+    {
+        "target": "127.0.0.1",
+        "port": 22,
+        "status": "OPEN",
+        "banner": "SSH-2.0-OpenSSH_10.2p1 Ubuntu-2ubuntu3.6"
+    }
+]
