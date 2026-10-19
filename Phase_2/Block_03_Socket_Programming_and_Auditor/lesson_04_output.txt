@@ -1,0 +1,11 @@
+==========================================
+CLI Network Auditor -> Target: 127.0.0.1
+==========================================
+[CLOSED] Port 21    | Banner: N/A
+[OPEN  ] Port 22    | Banner: SSH-2.0-OpenSSH_10.2p1 Ubuntu-2ubuntu3.6
+[CLOSED] Port 80    | Banner: N/A
+[CLOSED] Port 443   | Banner: N/A
+[CLOSED] Port 8080  | Banner: N/A
+==========================================
+Audit Complete! Report saved to audit_report.json
+==========================================
