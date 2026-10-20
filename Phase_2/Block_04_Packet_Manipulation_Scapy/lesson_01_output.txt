@@ -1,0 +1,32 @@
+===== Crafted Packet Details ====
+###[ IP ]###
+  version   = 4
+  ihl       = None
+  tos       = 0x0
+  len       = None
+  id        = 1
+  flags     = 
+  frag      = 0
+  ttl       = 64
+  proto     = tcp
+  chksum    = None
+  src       = 127.0.0.1
+  dst       = 127.0.0.1
+  \options   \
+###[ TCP ]###
+     sport     = ftp_data
+     dport     = http
+     seq       = 0
+     ack       = 0
+     dataofs   = None
+     reserved  = 0
+     flags     = S
+     window    = 8192
+     chksum    = None
+     urgptr    = 0
+     options   = []
+
+
+Sending SYN packet ....
+[+] Received response from: 127.0.0.1
+[+] TCP Response Flags: RA
