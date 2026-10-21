@@ -1,0 +1,6 @@
+=== TCP SYN Scan Target: 127.0.0.1 ===
+Port 21    | Status: CLOSED (RST-ACK)
+Port 22    | Status: OPENED (SYN-ACK)
+Port 80    | Status: CLOSED (RST-ACK)
+Port 443   | Status: CLOSED (RST-ACK)
+Port 8080  | Status: CLOSED (RST-ACK)
