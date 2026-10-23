@@ -1,0 +1,12 @@
+==== Sniffing 5 Packets on 'lo' ====
+[+] Captured 5 packets in memory.
+[+] Saved raw packets to disk: /home/hamzaimran/Autonomous Cyber Defense/Phase_2/Block_04_Packet_Manipulation_Scapy/captured_traffic.pcap
+
+=== Reading PCAP File back into Scapy ===
+[+] Loaded 5 packets from /home/hamzaimran/Autonomous Cyber Defense/Phase_2/Block_04_Packet_Manipulation_Scapy/captured_traffic.pcap:
+
+  [1] 127.0.0.1 -> 127.0.0.1:80 | Flags: S
+  [2] 127.0.0.1 -> 127.0.0.1:80 | Flags: S
+  [3] 127.0.0.1 -> 127.0.0.1:20 | Flags: RA
+  [4] 127.0.0.1 -> 127.0.0.1:20 | Flags: RA
+  [5] 127.0.0.1 -> 127.0.0.1:80 | Flags: S
