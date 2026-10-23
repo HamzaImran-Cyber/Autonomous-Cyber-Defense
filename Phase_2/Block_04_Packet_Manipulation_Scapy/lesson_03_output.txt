@@ -1,0 +1,7 @@
+=== Stateful SYN Flood Detector Active (Listening on 'lo' interface) ===
+[+] SYN from 127.0.0.1 | Pending: 1
+[+] SYN from 127.0.0.1 | Pending: 2
+[-] Handshake completed for 127.0.0.1 | Pending reset to: 1
+[-] Handshake completed for 127.0.0.1 | Pending reset to: 0
+[+] SYN from 127.0.0.1 | Pending: 1
+[+] SYN from 127.0.0.1 | Pending: 2
