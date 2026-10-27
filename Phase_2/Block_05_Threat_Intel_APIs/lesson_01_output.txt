@@ -1,0 +1,5 @@
+=== Processing auth_sample.log for SSH Brute-Force Activity ===
+
+--- Failed Attempt Summary ---
+IP: 203.0.113.45    | Failures: 4
+  [ALERT] BRUTE-FORCE DETECTED: 203.0.113.45 exceeds threshold (4/3)!
