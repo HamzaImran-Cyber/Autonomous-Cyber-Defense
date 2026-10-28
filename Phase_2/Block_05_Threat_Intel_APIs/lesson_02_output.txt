@@ -1,0 +1,5 @@
+=== Phase 2 Block 05: Threat Intelligence IP Enrichment ===
+
+IP: 203.0.113.45    | Score:  88% | Country: US  | TOR: YES | Action: CRITICAL (Auto-Block)
+IP: 198.51.100.14   | Score:  20% | Country: DE  | TOR: NO  | Action: CLEAN (Allow)
+IP: 192.168.1.50    | Score:   0% | Country: LOCAL | TOR: NO  | Action: CLEAN (Allow)
