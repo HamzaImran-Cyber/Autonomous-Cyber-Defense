@@ -1,0 +1,4 @@
+=== Phase 2 Block 05: JSON Web Access Log Parser ===
+
+[ALERT] Path Traversal detected | IP: 10.0.0.5   | URI: /etc/passwd
+[ALERT] SQL Injection detected | IP: 10.0.0.5   | URI: /login.php?user=' OR 1=1 --
