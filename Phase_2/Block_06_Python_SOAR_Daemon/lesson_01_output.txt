@@ -1,0 +1,4 @@
+=== Phase 2 Block 06: Active Firewall Response Engine ===
+
+[+] [ACTION] Successfully added DROP rule for IP: 203.0.113.45
+[!] IP 203.0.113.45 is already blocked in iptables.
