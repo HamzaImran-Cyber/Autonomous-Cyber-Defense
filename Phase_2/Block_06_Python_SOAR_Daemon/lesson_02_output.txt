@@ -1,0 +1,13 @@
+=== Phase 2 Block 06: Temporary Ban & Auto-Unban Daemon ===
+
+[+] [BAN] Applied temporary DROP rule for: 198.51.100.99
+[*] [TIMER] Scheduled automatic unban for 198.51.100.99 in 5s (Non-blocking)
+
+[*] Main thread continues processing without waiting...
+    [Main Thread Active] Elapsed: 1s
+    [Main Thread Active] Elapsed: 2s
+    [Main Thread Active] Elapsed: 3s
+    [Main Thread Active] Elapsed: 4s
+    [Main Thread Active] Elapsed: 5s
+    [Main Thread Active] Elapsed: 6s
+[-] [UNBAN] Expired ban timer. Removed DROP rule for: 198.51.100.99
