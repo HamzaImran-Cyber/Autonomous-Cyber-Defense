@@ -1,0 +1,9 @@
+=== Phase 2 Block 06: End-to-End SOAR Engine Pipeline ===
+
+[+] [LOG DETECTED] Failed SSH login | User: admin | IP: 198.51.100.45 (Count: 1)
+[+] [LOG DETECTED] Failed SSH login | User: admin | IP: 198.51.100.45 (Count: 2)
+[+] [LOG DETECTED] Failed SSH login | User: admin | IP: 198.51.100.45 (Count: 3)
+    [ALERT] Threshold crossed! Executing Automated Response Playbook...
+[!] [SOAR ACTION] Applied kernel iptables DROP rule for 198.51.100.45
+[*] [PLAYBOOK] Scheduled automated unban for 198.51.100.45 in 5s
+[*] [SOAR ACTION] Cooldown expired. Removed iptables DROP rule for 198.51.100.45
