@@ -1,0 +1,8 @@
+Nov 16 15:44:18 DESKTOP-31BK2BG systemd[1]: Started soar-daemon.service - Autonomous Cyber Defense - Python SOAR Daemon.
+Nov 16 15:44:18 DESKTOP-31BK2BG python3[2020]: [*] Hardened SOAR Daemon started. Watching /home/hamzaimran/Autonomous Cyber Defense/Phase_2/Block_06_Python_SOAR_Daemon/live_auth.log...
+Nov 16 15:51:32 DESKTOP-31BK2BG python3[2020]: [SAFE] Ignored whitelisted IP: 192.168.1.50
+Nov 16 15:51:44 DESKTOP-31BK2BG python3[2020]: [+] Failed SSH from 203.0.113.88 (1/3)
+Nov 16 15:51:53 DESKTOP-31BK2BG python3[2020]: [+] Failed SSH from 203.0.113.88 (2/3)
+Nov 16 15:52:00 DESKTOP-31BK2BG python3[2020]: [+] Failed SSH from 203.0.113.88 (3/3)
+Nov 16 15:52:00 DESKTOP-31BK2BG python3[2020]: [!] [SOAR BLOCK] Dropped traffic from 203.0.113.88 for 30s
+Nov 16 15:52:30 DESKTOP-31BK2BG python3[2020]: [*] [SOAR UNBAN] Cooldown expired for 203.0.113.88
